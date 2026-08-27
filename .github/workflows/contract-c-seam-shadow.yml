@@ -1,0 +1,45 @@
+name: Contract C seam shadow
+
+on:
+  push:
+    branches:
+      - research/contract-c-seam-shadow
+  pull_request:
+    branches:
+      - main
+    paths:
+      - src/auditDecisionEngine.js
+      - tests/contract-c-seam-shadow.sweep.mjs
+      - docs/research/**
+      - .github/workflows/contract-c-seam-shadow.yml
+
+permissions:
+  contents: read
+
+jobs:
+  contract-c-shadow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Parse experimental module
+        run: node --check src/auditDecisionEngine.js
+
+      - name: Run Contract C metamorphic and policy checks
+        run: node tests/contract-c-seam-shadow.sweep.mjs
+
+      - name: Re-run existing engine invariant sweep
+        run: node tests/engine.sweep.mjs
+
+      - name: Re-run existing output-quality sweep
+        run: node tests/output-quality.sweep.mjs
+
+      - name: Re-run existing combination matrix sweep
+        run: node tests/combination-matrix.sweep.mjs
+
+      - name: Re-run existing Gate head tests
+        run: node --test tests/gateHead.test.mjs
