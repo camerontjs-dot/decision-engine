@@ -152,69 +152,81 @@ try {
 }
 check("not_checkable without a reason fails closed", missingReasonFailedClosed);
 
+let unknownFlagFailedClosed = false;
+try {
+  const unknownFlag = clone(base);
+  unknownFlag.audit.auditFlags = ["invented_future_flag"];
+  projectContractC(unknownFlag);
+} catch {
+  unknownFlagFailedClosed = true;
+}
+check("unrecognized audit vocabulary fails closed", unknownFlagFailedClosed);
+
 const promotion = decideAuditedClaim(base);
-check("supported/high/correct becomes promotion candidate", promotion.disposition === "promotion_candidate");
-check("promotion candidate still requires operator", promotion.operatorRequired === true);
+check("supported/high/correct clears the audited-claim Gate bar", promotion.decision === "promote");
+check("Gate promote still requires human approval", promotion.requiresHumanApproval === true);
+check("Gate recommendation is never auto-applied", promotion.appliedAutomatically === false);
 check("decision receipt never mutates MainFrame status", promotion.mainframeStatusMutation === null);
+check("decision receipt preserves C-B lineage", promotion.lineage.contractBBundleSha256 === "sha256:bundle001");
 
 const unsupported = clone(base);
 unsupported.audit.supportVerdict = "unsupported";
-check("unsupported claim is blocked", decideAuditedClaim(unsupported).disposition === "blocked");
+check("unsupported claim does not clear the Gate bar", decideAuditedClaim(unsupported).decision === "reject");
 
 const contradicted = clone(base);
 contradicted.audit.supportVerdict = "contradicted";
-check("contradicted claim is blocked", decideAuditedClaim(contradicted).disposition === "blocked");
+check("contradicted claim does not clear the Gate bar", decideAuditedClaim(contradicted).decision === "reject");
 
 const partial = clone(base);
 partial.audit.supportVerdict = "partially_supported";
-check(
-  "partially supported claim requires human review",
-  decideAuditedClaim(partial).disposition === "human_review_required",
-);
+check("partially supported claim fails the full-support bar", decideAuditedClaim(partial).decision === "reject");
 
 const abstained = clone(base);
 abstained.audit.supportVerdict = "not_checkable";
 abstained.audit.supportVerdictReason = "absence_not_decidable";
+const abstainedDecision = decideAuditedClaim(abstained);
+check("CAL abstention becomes Gate hold, not reject", abstainedDecision.decision === "hold");
 check(
-  "CAL abstention remains first-class downstream",
-  decideAuditedClaim(abstained).disposition === "retain_synthesized",
-);
-check(
-  "abstention reason is preserved in decision rationale",
-  decideAuditedClaim(abstained).reasons.some((reason) => reason.includes("absence_not_decidable")),
+  "abstention reason remains visible in criterion observation",
+  abstainedDecision.criteria.some((criterion) => (
+    criterion.id === "cal-support-clears-bar" &&
+    criterion.observed?.supportVerdictReason === "absence_not_decidable"
+  )),
 );
 
 const blockingFlag = clone(base);
 blockingFlag.audit.auditFlags = ["overstated"];
-check("overstated claim is blocked as written", decideAuditedClaim(blockingFlag).disposition === "blocked");
+const blockingDecision = decideAuditedClaim(blockingFlag);
+check("overstated claim is rejected as written", blockingDecision.decision === "reject");
+check(
+  "overstated result explicitly warns against claim laundering",
+  blockingDecision.criteria.some((criterion) => (
+    criterion.id === "no-blocking-audit-flags" && criterion.note?.includes("must not be weakened")
+  )),
+);
 
 const reviewFlag = clone(base);
 reviewFlag.audit.auditFlags = ["inferred"];
-check(
-  "inferred flag routes to human review under shadow policy",
-  decideAuditedClaim(reviewFlag).disposition === "human_review_required",
-);
+const reviewDecision = decideAuditedClaim(reviewFlag);
+check("inferred flag remains advisory under the Gate bar", reviewDecision.decision === "promote");
+check("advisory inferred flag makes the decision a close call", reviewDecision.closeCall === true);
+check("advisory inferred flag is preserved as a caveat", reviewDecision.caveats.some((item) => item.id === "review-audit-flags"));
 
 const explicitUnknown = clone(base);
 explicitUnknown.audit.explicitUnknowns = ["temporal_applicability"];
-check(
-  "decision-relevant unknown routes to human review",
-  decideAuditedClaim(explicitUnknown).disposition === "human_review_required",
-);
+const unknownDecision = decideAuditedClaim(explicitUnknown);
+check("decision-relevant unknown becomes Gate hold", unknownDecision.decision === "hold");
+check("unknown does not become a blocking failure", unknownDecision.blockingFailures.length === 0);
 
 const wrongCitation = clone(base);
 wrongCitation.audit.citationStatus = "wrong_source";
-check(
-  "wrong-source citation prevents promotion candidacy",
-  decideAuditedClaim(wrongCitation).disposition === "human_review_required",
-);
+check("wrong-source citation fails the promotion bar", decideAuditedClaim(wrongCitation).decision === "reject");
 
 const mediumConfidence = clone(base);
 mediumConfidence.audit.auditConfidence = "medium";
-check(
-  "below-policy audit confidence prevents promotion candidacy",
-  decideAuditedClaim(mediumConfidence).disposition === "human_review_required",
-);
+const confidenceDecision = decideAuditedClaim(mediumConfidence);
+check("lower CAL confidence becomes Gate hold", confidenceDecision.decision === "hold");
+check("lower CAL confidence is not manufactured into failure", confidenceDecision.blockingFailures.length === 0);
 
 const firstReceipt = canonicalJson(decideAuditedClaim(base));
 const secondReceipt = canonicalJson(decideAuditedClaim(clone(base)));
