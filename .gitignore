@@ -1,0 +1,16 @@
+.DS_Store
+assets/.DS_Store
+
+# Environments and credentials
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Node and local tooling
+node_modules/
+npm-debug.log*
+.npm/
+.cache/
+.coverage/

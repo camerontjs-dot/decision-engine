@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628" role="img" aria-labelledby="title desc">
+  <title id="title">Career Decision Engine</title>
+  <desc id="desc">Career Decision Engine social card. Dimension scoring visual, wordmark, and tagline on a dark slate ground.</desc>
+
+  <defs>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16A3A3"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <linearGradient id="muted" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#33424C"/>
+      <stop offset="1" stop-color="#52616B"/>
+    </linearGradient>
+    <linearGradient id="bgFade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1218"/>
+      <stop offset="1" stop-color="#101820"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ground -->
+  <rect width="1200" height="628" fill="url(#bgFade)"/>
+
+  <!-- Faint horizontal grid lines -->
+  <g stroke="#1A242E" stroke-width="1">
+    <line x1="0" y1="157" x2="1200" y2="157"/>
+    <line x1="0" y1="314" x2="1200" y2="314"/>
+    <line x1="0" y1="471" x2="1200" y2="471"/>
+  </g>
+
+  <!-- Scoring visual: two options across five dimensions -->
+  <!-- Frame -->
+  <g transform="translate(112 154)">
+    <rect width="320" height="320" rx="32" fill="#101820" stroke="#1F2D38" stroke-width="2"/>
+
+    <!-- Dimension labels and bars (Option A teal, Option B muted) -->
+    <g transform="translate(28 36)" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="500">
+      <!-- comp -->
+      <text x="0" y="10" fill="#9AA8B2">comp</text>
+      <rect x="0" y="18" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="18" width="218" height="6" rx="3" fill="url(#signal)"/>
+      <rect x="0" y="28" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="28" width="156" height="6" rx="3" fill="url(#muted)"/>
+
+      <!-- growth -->
+      <text x="0" y="60" fill="#9AA8B2">growth</text>
+      <rect x="0" y="68" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="68" width="178" height="6" rx="3" fill="url(#signal)"/>
+      <rect x="0" y="78" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="78" width="200" height="6" rx="3" fill="url(#muted)"/>
+
+      <!-- lifestyle -->
+      <text x="0" y="110" fill="#9AA8B2">lifestyle</text>
+      <rect x="0" y="118" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="118" width="142" height="6" rx="3" fill="url(#signal)"/>
+      <rect x="0" y="128" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="128" width="208" height="6" rx="3" fill="url(#muted)"/>
+
+      <!-- stability -->
+      <text x="0" y="160" fill="#9AA8B2">stability</text>
+      <rect x="0" y="168" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="168" width="194" height="6" rx="3" fill="url(#signal)"/>
+      <rect x="0" y="178" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="178" width="170" height="6" rx="3" fill="url(#muted)"/>
+
+      <!-- mission -->
+      <text x="0" y="210" fill="#9AA8B2">mission</text>
+      <rect x="0" y="218" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="218" width="232" height="6" rx="3" fill="url(#signal)"/>
+      <rect x="0" y="228" width="264" height="6" rx="3" fill="#1A242E"/>
+      <rect x="0" y="228" width="184" height="6" rx="3" fill="url(#muted)"/>
+
+      <!-- close-call indicator -->
+      <line x1="0" y1="260" x2="264" y2="260" stroke="#33424C" stroke-width="1"/>
+      <text x="0" y="278" fill="#F5A524" font-size="11" font-weight="600">slight edge — confidence: low</text>
+    </g>
+  </g>
+
+  <!-- Wordmark and tagline -->
+  <g transform="translate(500 240)">
+    <text x="0" y="0" fill="#E8EEF2" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="76" font-weight="760" letter-spacing="-1.5">Career Decision</text>
+    <text x="0" y="76" fill="#E8EEF2" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="76" font-weight="760" letter-spacing="-1.5">Engine</text>
+    <text x="4" y="124" fill="#9AA8B2" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="500" letter-spacing="0">decision support, calibrated</text>
+    <text x="4" y="172" fill="#52616B" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="500" letter-spacing="0.5">scoring · rule checks · confidence labels · validation sweeps</text>
+  </g>
+</svg>

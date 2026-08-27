@@ -1,0 +1,70 @@
+name: CI & Repository Hygiene Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene-and-leak-check:
+    name: Path & Secret Leak Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify No Absolute Machine Path Leaks
+        run: |
+          echo "Scanning codebase for hardcoded absolute home/workstation paths..."
+          if git grep -n -E "(\/Users\/[a-zA-Z0-9_.-]+|\/home\/[a-zA-Z0-9_.-]+|\/private\/var\/[a-zA-Z0-9_.-]+)" -- ':!.github' ':!.githooks' ':!.leak-scan-allow' ':!tests/fixtures'; then
+            echo "ERROR: Found hardcoded absolute local machine path leaks in codebase!"
+            exit 1
+          fi
+          echo "Clean: No absolute local path leaks detected."
+
+      - name: Verify No Secret Tokens
+        run: |
+          echo "Scanning codebase for high-entropy secret tokens..."
+          if git grep -n -E "(sk-ant-[a-zA-Z0-9_-]{20,}|sk-[a-zA-Z0-9]{24,}|ghp_[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16})" -- ':!.github' ':!.githooks' ':!.leak-scan-allow' ':!tests/fixtures'; then
+            echo "ERROR: Found potential live secrets or API keys in codebase!"
+            exit 1
+          fi
+          echo "Clean: No live secret patterns detected."
+
+      - name: Verify No Tracked Secret Files
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env|\.env\..*|.*\.(pem|key))$'; then
+            echo "ERROR: Found tracked environment or private-key files!"
+            exit 1
+          fi
+          echo "Clean: No tracked secret files detected."
+
+  test-and-lint:
+    name: JavaScript Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run engine invariant sweep
+        run: node tests/engine.sweep.mjs
+
+      - name: Run output-quality sweep
+        run: node tests/output-quality.sweep.mjs
+
+      - name: Run combination-matrix sweep
+        run: node tests/combination-matrix.sweep.mjs
+
+      - name: Run Gate head tests
+        run: node --test tests/gateHead.test.mjs
