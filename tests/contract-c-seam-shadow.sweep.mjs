@@ -3,6 +3,8 @@ import {
   decideAuditedClaim,
   projectContractC,
 } from "../src/auditDecisionEngine.js";
+import { evaluateAuditedNotePromotion } from "../src/gate/auditedNotePromotion.js";
+import { parseNoteToGateItem } from "../src/gate/notePromotionBar.js";
 
 const checks = [];
 
@@ -231,6 +233,68 @@ check("lower CAL confidence is not manufactured into failure", confidenceDecisio
 const firstReceipt = canonicalJson(decideAuditedClaim(base));
 const secondReceipt = canonicalJson(decideAuditedClaim(clone(base)));
 check("decision replay is deterministic", firstReceipt === secondReceipt);
+
+// MainFrame composition fixture: structural note checks and CAL claim checks are
+// independent Gate decisions combined at note level.
+const noteText = `---
+title: "Contract C fixture"
+domain: "knowledge-systems"
+type: note
+status: synthesized
+source: "raw-source.md"
+links: ["raw-source.md"]
+tags: ["needs-audit"]
+---
+## Purpose
+Test whether an audited claim may proceed to operator promotion review.
+
+1. **Provenance claim** [source-claim / high confidence]
+*Evidence:* \`raw-source.md\`
+`;
+
+const resolvedNote = parseNoteToGateItem(
+  "10_knowledge/knowledge-systems/contract-c-fixture.md",
+  noteText,
+  () => ({ exists: true, quarantined: false }),
+);
+
+const notePromotion = evaluateAuditedNotePromotion({
+  noteItem: resolvedNote,
+  claimAuditResults: [base],
+});
+check("resolved note plus supported audited claim recommends promote", notePromotion.decision === "promote");
+check("note-level promote remains human-applied", notePromotion.requiresHumanApproval === true);
+check("note-level decision never mutates MainFrame status", notePromotion.mainframeStatusMutation === null);
+check("note-level receipt records complete claim-audit coverage", notePromotion.auditCoverage.complete === true);
+
+const unresolvedNote = parseNoteToGateItem(
+  "10_knowledge/knowledge-systems/contract-c-fixture.md",
+  noteText,
+);
+const unresolvedNoteDecision = evaluateAuditedNotePromotion({
+  noteItem: unresolvedNote,
+  claimAuditResults: [base],
+});
+check("unresolved source references hold the note", unresolvedNoteDecision.decision === "hold");
+
+const noteWithAbstention = evaluateAuditedNotePromotion({
+  noteItem: resolvedNote,
+  claimAuditResults: [abstained],
+});
+check("a CAL abstention holds the whole note", noteWithAbstention.decision === "hold");
+
+const noteWithUnsupportedClaim = evaluateAuditedNotePromotion({
+  noteItem: resolvedNote,
+  claimAuditResults: [unsupported],
+});
+check("an unsupported audited claim rejects note promotion", noteWithUnsupportedClaim.decision === "reject");
+
+const incompleteCoverage = evaluateAuditedNotePromotion({
+  noteItem: resolvedNote,
+  claimAuditResults: [],
+});
+check("missing claim audit coverage holds rather than rejects", incompleteCoverage.decision === "hold");
+check("coverage mismatch remains explicit", incompleteCoverage.auditCoverage.complete === false);
 
 const failed = checks.filter((item) => !item.condition);
 checks.forEach((item) => {
