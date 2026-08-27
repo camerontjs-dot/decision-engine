@@ -1,8 +1,10 @@
-// Experimental Contract-C decision surface.
+// Experimental Contract-C adapter for the Decision Engine Gate head.
 //
-// This module is deliberately separate from the public career comparison engine.
-// It tests whether a small, provenance-bound CAL result can drive a deterministic
-// downstream policy without re-running semantic audit or mutating MainFrame state.
+// Contract C carries the audit state CAL actually produced. The Gate head owns
+// the downstream bar. Keeping those two surfaces separate prevents a CAL
+// verdict from silently becoming a MainFrame lifecycle decision.
+
+import { OUTCOME, SEVERITY, defineBar, evaluateGate } from "./gate/gateHead.js";
 
 export const CONTRACT_C_PROFILE = "contract-c-rc0";
 export const DECISION_RECEIPT_PROFILE = "decision-receipt-rc0";
@@ -13,6 +15,23 @@ export const SUPPORT_VERDICTS = Object.freeze([
   "unsupported",
   "contradicted",
   "not_checkable",
+]);
+
+export const VERDICT_REASONS = Object.freeze([
+  "out_of_scope",
+  "no_entail_signal",
+  "no_evidence",
+  "conflicting_evidence",
+  "absence_not_decidable",
+]);
+
+export const AUDIT_FLAGS = Object.freeze([
+  "overstated",
+  "inferred",
+  "source_scope_error",
+  "false_caution",
+  "missed_counterevidence",
+  "coverage_loss",
 ]);
 
 export const CITATION_STATUSES = Object.freeze([
@@ -26,22 +45,14 @@ export const CITATION_STATUSES = Object.freeze([
 
 export const AUDIT_CONFIDENCE = Object.freeze(["low", "medium", "high"]);
 
-export const DEFAULT_PROMOTION_POLICY = Object.freeze({
-  policyId: "mainframe-knowledge-promotion-shadow",
-  policyVersion: "0.1.0-shadow",
-  minimumAuditConfidence: "high",
-  allowedCitationStatuses: Object.freeze(["correct", "not_applicable"]),
-  blockingAuditFlags: Object.freeze([
-    "overstated",
-    "source_scope_error",
-    "missed_counterevidence",
-    "coverage_loss",
-  ]),
-  reviewAuditFlags: Object.freeze(["inferred", "false_caution"]),
-  requireOperatorPromotion: true,
-});
+const BLOCKING_AUDIT_FLAGS = Object.freeze([
+  "overstated",
+  "source_scope_error",
+  "missed_counterevidence",
+  "coverage_loss",
+]);
 
-const CONFIDENCE_RANK = Object.freeze({ low: 0, medium: 1, high: 2 });
+const REVIEW_AUDIT_FLAGS = Object.freeze(["inferred", "false_caution"]);
 
 function assertNonEmptyString(value, field) {
   if (typeof value !== "string" || !value.trim()) {
@@ -64,6 +75,12 @@ function sortedUniqueStrings(values = []) {
   return [...new Set(normalized)].sort();
 }
 
+function sortedEnumSet(values, allowed, field) {
+  const normalized = sortedUniqueStrings(values ?? []);
+  normalized.forEach((value) => assertEnum(value, allowed, field));
+  return normalized;
+}
+
 function sortedRuleIds(rules = []) {
   if (!Array.isArray(rules)) throw new TypeError("audit.rulesFired must be an array.");
   return [...new Set(rules.map((rule) => {
@@ -72,8 +89,9 @@ function sortedRuleIds(rules = []) {
       return rule;
     }
     if (rule && typeof rule === "object") {
-      assertNonEmptyString(rule.ruleId ?? rule.rule_id, "rule id");
-      return rule.ruleId ?? rule.rule_id;
+      const id = rule.ruleId ?? rule.rule_id;
+      assertNonEmptyString(id, "rule id");
+      return id;
     }
     throw new TypeError("Each fired rule must be a rule id or rule object.");
   }))].sort();
@@ -92,6 +110,11 @@ export function canonicalJson(value) {
   return JSON.stringify(value);
 }
 
+/**
+ * Project an implementation-rich CAL result into the candidate stable seam.
+ * Unknown keys are intentionally ignored: an implementation detail only earns
+ * a place in Contract C after a boundary experiment shows a downstream need.
+ */
 export function projectContractC(calResult) {
   if (!calResult || typeof calResult !== "object") {
     throw new TypeError("calResult must be an object.");
@@ -115,12 +138,10 @@ export function projectContractC(calResult) {
 
   if (audit.supportVerdict === "not_checkable") {
     assertNonEmptyString(audit.supportVerdictReason, "audit.supportVerdictReason");
+    assertEnum(audit.supportVerdictReason, VERDICT_REASONS, "audit.supportVerdictReason");
+  } else if (audit.supportVerdictReason !== null && audit.supportVerdictReason !== undefined) {
+    assertEnum(audit.supportVerdictReason, VERDICT_REASONS, "audit.supportVerdictReason");
   }
-
-  const explicitUnknowns = sortedUniqueStrings(audit.explicitUnknowns ?? []);
-  const decisionBasisPassageIds = sortedUniqueStrings(audit.decisionBasisPassageIds ?? []);
-  const decisionBasisPassageHashes = sortedUniqueStrings(audit.decisionBasisPassageHashes ?? []);
-  const assessmentReceiptHashes = sortedUniqueStrings(audit.assessmentReceiptHashes ?? []);
 
   return {
     profile: CONTRACT_C_PROFILE,
@@ -140,14 +161,14 @@ export function projectContractC(calResult) {
       rulesHash: audit.rulesHash,
       supportVerdict: audit.supportVerdict,
       supportVerdictReason: audit.supportVerdictReason ?? null,
-      auditFlags: sortedUniqueStrings(audit.auditFlags ?? []),
+      auditFlags: sortedEnumSet(audit.auditFlags ?? [], AUDIT_FLAGS, "audit.auditFlags"),
       citationStatus: audit.citationStatus,
       auditConfidence: audit.auditConfidence,
       rulesFired: sortedRuleIds(audit.rulesFired ?? []),
-      explicitUnknowns,
-      decisionBasisPassageIds,
-      decisionBasisPassageHashes,
-      assessmentReceiptHashes,
+      explicitUnknowns: sortedUniqueStrings(audit.explicitUnknowns ?? []),
+      decisionBasisPassageIds: sortedUniqueStrings(audit.decisionBasisPassageIds ?? []),
+      decisionBasisPassageHashes: sortedUniqueStrings(audit.decisionBasisPassageHashes ?? []),
+      assessmentReceiptHashes: sortedUniqueStrings(audit.assessmentReceiptHashes ?? []),
     },
     integrity: {
       calResultSha256: integrity.calResultSha256,
@@ -155,87 +176,143 @@ export function projectContractC(calResult) {
   };
 }
 
-function confidenceMeets(actual, minimum) {
-  return CONFIDENCE_RANK[actual] >= CONFIDENCE_RANK[minimum];
-}
-
-function hasAny(values, candidates) {
-  const set = new Set(values);
-  return candidates.some((candidate) => set.has(candidate));
-}
-
-function receipt(contractC, policy, disposition, ruleIds, reasons) {
+export function contractCToGateItem(calResult) {
+  const contractC = projectContractC(calResult);
   return {
-    profile: DECISION_RECEIPT_PROFILE,
-    contractCProfile: contractC.profile,
-    claimId: contractC.claim.claimId,
-    claimTextSha256: contractC.claim.claimTextSha256,
-    contractBBundleSha256: contractC.upstream.contractBBundleSha256,
-    calResultSha256: contractC.integrity.calResultSha256,
-    policyId: policy.policyId,
-    policyVersion: policy.policyVersion,
-    disposition,
-    operatorRequired: policy.requireOperatorPromotion || disposition !== "promotion_candidate",
-    rulesFired: ruleIds,
-    reasons,
-    mainframeStatusMutation: null,
+    id: contractC.claim.claimId,
+    kind: "audited-claim",
+    contractC,
   };
 }
 
-export function decideAuditedClaim(calResult, policy = DEFAULT_PROMOTION_POLICY) {
-  const contractC = projectContractC(calResult);
-  const { audit } = contractC;
+function intersects(values, candidates) {
+  const set = new Set(values);
+  return candidates.filter((candidate) => set.has(candidate));
+}
 
-  if (audit.supportVerdict === "contradicted" || audit.supportVerdict === "unsupported") {
-    return receipt(contractC, policy, "blocked", ["DE-R01"], [
-      `Claim is ${audit.supportVerdict} under the supplied CAL audit.`,
-    ]);
-  }
+/**
+ * First MainFrame-facing bar over Contract-C audit state.
+ *
+ * It intentionally mirrors the Gate head's epistemic semantics:
+ * - a known failure to clear the bar -> FAIL / reject recommendation;
+ * - an unresolved audit state -> UNKNOWN / hold;
+ * - review-worthy but non-blocking state -> advisory caveat;
+ * - even a promote recommendation remains human-applied.
+ */
+export const AUDITED_CLAIM_PROMOTION_BAR = defineBar({
+  id: "audited-claim-promotion",
+  version: "0.1.0-shadow",
+  description:
+    "Shadow bar for deciding whether a CAL-audited MainFrame claim may proceed to operator promotion review.",
+  requiresHumanApproval: true,
+  criteria: [
+    {
+      id: "cal-support-clears-bar",
+      description: "CAL support state is sufficient for the claim as written.",
+      severity: SEVERITY.BLOCKING,
+      evaluate: (item) => {
+        const { supportVerdict, supportVerdictReason } = item.contractC.audit;
+        if (supportVerdict === "supported") {
+          return { outcome: OUTCOME.PASS, observed: { supportVerdict } };
+        }
+        if (supportVerdict === "not_checkable") {
+          return {
+            outcome: OUTCOME.UNKNOWN,
+            observed: { supportVerdict, supportVerdictReason },
+            note: "CAL abstained; no adverse or favorable default is inferred.",
+          };
+        }
+        return {
+          outcome: OUTCOME.FAIL,
+          observed: { supportVerdict },
+          note: "The claim as written did not receive full support.",
+        };
+      },
+    },
+    {
+      id: "no-blocking-audit-flags",
+      description: "No audit failure mode blocks the claim as written.",
+      severity: SEVERITY.BLOCKING,
+      evaluate: (item) => {
+        const hits = intersects(item.contractC.audit.auditFlags, BLOCKING_AUDIT_FLAGS);
+        return {
+          outcome: hits.length ? OUTCOME.FAIL : OUTCOME.PASS,
+          observed: { blockingFlags: hits },
+          note: hits.includes("overstated") ? "Claim text must not be weakened in place to make the old audit pass." : null,
+        };
+      },
+    },
+    {
+      id: "no-unresolved-audit-state",
+      description: "CAL left no explicit decision-relevant state unresolved.",
+      severity: SEVERITY.BLOCKING,
+      evaluate: (item) => {
+        const unknowns = item.contractC.audit.explicitUnknowns;
+        return {
+          outcome: unknowns.length ? OUTCOME.UNKNOWN : OUTCOME.PASS,
+          observed: { explicitUnknowns: unknowns },
+          note: unknowns.length ? "Unresolved state holds the claim; it is not treated as a failure." : null,
+        };
+      },
+    },
+    {
+      id: "citation-clears-bar",
+      description: "CAL citation status is sufficient for promotion review.",
+      severity: SEVERITY.BLOCKING,
+      evaluate: (item) => {
+        const { citationStatus } = item.contractC.audit;
+        const pass = citationStatus === "correct" || citationStatus === "not_applicable";
+        return {
+          outcome: pass ? OUTCOME.PASS : OUTCOME.FAIL,
+          observed: { citationStatus },
+        };
+      },
+    },
+    {
+      id: "audit-confidence-clears-bar",
+      description: "CAL recorded high confidence in its own result for this shadow policy.",
+      severity: SEVERITY.BLOCKING,
+      evaluate: (item) => {
+        const { auditConfidence } = item.contractC.audit;
+        return {
+          outcome: auditConfidence === "high" ? OUTCOME.PASS : OUTCOME.UNKNOWN,
+          observed: { auditConfidence, required: "high" },
+          note: auditConfidence === "high" ? null : "Audit confidence is below the shadow bar; hold rather than reject.",
+        };
+      },
+    },
+    {
+      id: "review-audit-flags",
+      description: "Non-blocking audit flags are surfaced to the operator.",
+      severity: SEVERITY.ADVISORY,
+      evaluate: (item) => {
+        const hits = intersects(item.contractC.audit.auditFlags, REVIEW_AUDIT_FLAGS);
+        return {
+          outcome: hits.length ? OUTCOME.FAIL : OUTCOME.PASS,
+          observed: { reviewFlags: hits },
+          note: hits.length ? "These flags do not erase support, but they should be visible during operator review." : null,
+        };
+      },
+    },
+  ],
+});
 
-  if (hasAny(audit.auditFlags, policy.blockingAuditFlags)) {
-    return receipt(contractC, policy, "blocked", ["DE-R02"], [
-      "A blocking audit flag is present; the claim as written is not eligible for promotion.",
-    ]);
-  }
+/** Evaluate the audit state through the existing generic Gate head. */
+export function decideAuditedClaim(calResult, bar = AUDITED_CLAIM_PROMOTION_BAR) {
+  const item = contractCToGateItem(calResult);
+  const gateDecision = evaluateGate(item, bar);
+  const contractC = item.contractC;
 
-  if (audit.supportVerdict === "not_checkable") {
-    return receipt(contractC, policy, "retain_synthesized", ["DE-R03"], [
-      `CAL abstained: ${audit.supportVerdictReason}.`,
-    ]);
-  }
-
-  if (audit.supportVerdict === "partially_supported") {
-    return receipt(contractC, policy, "human_review_required", ["DE-R04"], [
-      "The evidence only partially supports the claim as written.",
-    ]);
-  }
-
-  if (audit.explicitUnknowns.length) {
-    return receipt(contractC, policy, "human_review_required", ["DE-R05"], [
-      "Decision-relevant unknown state remains explicit in the CAL result.",
-    ]);
-  }
-
-  if (!policy.allowedCitationStatuses.includes(audit.citationStatus)) {
-    return receipt(contractC, policy, "human_review_required", ["DE-R06"], [
-      `Citation status ${audit.citationStatus} is not promotion-eligible under this policy.`,
-    ]);
-  }
-
-  if (!confidenceMeets(audit.auditConfidence, policy.minimumAuditConfidence)) {
-    return receipt(contractC, policy, "human_review_required", ["DE-R07"], [
-      `Audit confidence ${audit.auditConfidence} is below policy minimum ${policy.minimumAuditConfidence}.`,
-    ]);
-  }
-
-  if (hasAny(audit.auditFlags, policy.reviewAuditFlags)) {
-    return receipt(contractC, policy, "human_review_required", ["DE-R08"], [
-      "A review-only audit flag is present; automatic promotion candidacy is withheld.",
-    ]);
-  }
-
-  return receipt(contractC, policy, "promotion_candidate", ["DE-R09"], [
-    "The supplied CAL state satisfies the shadow promotion-candidate policy.",
-    "MainFrame still owns the operator promotion gate.",
-  ]);
+  return {
+    profile: DECISION_RECEIPT_PROFILE,
+    ...gateDecision,
+    lineage: {
+      contractCProfile: contractC.profile,
+      claimTextSha256: contractC.claim.claimTextSha256,
+      contractBBundleSha256: contractC.upstream.contractBBundleSha256,
+      calResultSha256: contractC.integrity.calResultSha256,
+    },
+    // Load-bearing MainFrame boundary: a Gate recommendation is not a write.
+    mainframeStatusMutation: null,
+  };
 }
