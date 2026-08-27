@@ -200,3 +200,7 @@ Combination matrix sweep: 6309/6309 passed across 700 evaluated comparisons
 The useful part of this project is not the career domain by itself. The useful part is the validation posture: define the inputs, normalize them, expose the assumptions, test edge cases, and keep confidence proportional to the evidence.
 
 That is the same operating style I bring from regulated quality work into AI systems work: traceability, failure-mode thinking, explicit uncertainty, and quality gates before final claims.
+
+## Research surface
+
+The [`research/contract-c-seam-shadow/`](research/contract-c-seam-shadow/) directory contains a small, dependency-free research fixture set for a proposed Claim Audit Lab → Decision Engine handoff. It uses synthetic mainframe-claim examples and sanitized citation-provenance controls to exercise promote, hold, and reject recommendations without changing the career comparison UI or mutating any external state.

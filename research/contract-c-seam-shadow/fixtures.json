@@ -1,0 +1,382 @@
+{
+  "schema": "decision-engine/contract-c-claim-audit-fixture@0.1.0",
+  "status": "proposed",
+  "research_only": true,
+  "updated": "2026-08-27",
+  "provenance": {
+    "evidence_kind": "synthetic",
+    "incident_derived_controls": true,
+    "raw_incident_published": false,
+    "cal_validation": false,
+    "regulatory_opinion": false
+  },
+  "field_status": {
+    "support_verdict": "observed_cal_field",
+    "audit_flags": "open_set_preserved",
+    "citation_status": "fixture_only_reserved",
+    "support_verdict_reason": "observed_subset_versioned"
+  },
+  "reason_vocabulary": {
+    "version": "cal-observed-reasons@0.1.0",
+    "status": "observed_subset_not_ratified",
+    "values": ["out_of_scope", "no_entail_signal", "no_evidence"]
+  },
+  "vocabulary": {
+    "support_verdict": [
+      "supported",
+      "partially_supported",
+      "unsupported",
+      "contradicted",
+      "not_checkable"
+    ],
+    "audit_flags_known": [
+      "overstated",
+      "inferred",
+      "source_scope_error",
+      "false_caution",
+      "missed_counterevidence",
+      "coverage_loss"
+    ],
+    "citation_status": [
+      "correct",
+      "partial",
+      "wrong_source",
+      "missing_needed",
+      "not_cited",
+      "not_applicable"
+    ],
+    "source_status": [
+      "available",
+      "missing",
+      "quarantined"
+    ]
+  },
+  "fixtures": [
+    {
+      "id": "mainframe-approval-claim-supported-001",
+      "title": "One run records the approval flag",
+      "control_class": "positive_control",
+      "claim": {
+        "text": "The sample batch run recorded approval flag Y.",
+        "claim_type": "run_observation"
+      },
+      "claim_hash": "3a2d3a82446b703fb57f1e59c2c12031139853c941fa6c120a3e7b215b4d315b",
+      "evidence": [
+        {
+          "id": "eb-synthetic-run-001",
+          "source_ref": "fixture://mainframe/run-001/log",
+          "source_status": "available",
+          "excerpt": "Run RUN-001 recorded approval flag Y at completion.",
+          "evidence_hash": "122f73207f02551c2c8513b9c35a31d0f6ba89fa9298e0b742816f2a34044a0b"
+        }
+      ],
+      "cal": {
+        "support_verdict": "supported",
+        "support_verdict_reason": null,
+        "audit_flags": [],
+        "citation_status": "correct",
+        "audit_note": "The supplied excerpt states the same bounded run observation as the claim."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The fixture supplies the one claim and its one evidence item."
+      },
+      "expected_gate": {
+        "decision": "promote",
+        "blocking_failures": [],
+        "blocking_unknowns": [],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "mainframe-approval-claim-inferred-002",
+      "title": "A bounded inference remains a caveated recommendation",
+      "control_class": "positive_control",
+      "claim": {
+        "text": "The sample run suggests that the batch control met the fixture's approval expectation.",
+        "claim_type": "bounded_inference"
+      },
+      "claim_hash": "afbfdfe03b79334c1f6ce2abc636e4c0687c78b4f4e935ea9a55a948cbc0ec69",
+      "evidence": [
+        {
+          "id": "eb-synthetic-run-002",
+          "source_ref": "fixture://mainframe/run-002/log",
+          "source_status": "available",
+          "excerpt": "The fixture expected approval flag Y for RUN-002, and the completion record shows approval flag Y.",
+          "evidence_hash": "aaf75c48be4cc1f6f853aef68a7c9a759ccc5cde8c6708077b7eedda44d58ac9"
+        }
+      ],
+      "cal": {
+        "support_verdict": "supported",
+        "support_verdict_reason": null,
+        "audit_flags": ["inferred"],
+        "citation_status": "correct",
+        "audit_note": "The wording is explicitly a suggestion from one observed run, not a universal reliability claim."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The bounded inference and its evidence are both present."
+      },
+      "expected_gate": {
+        "decision": "promote",
+        "blocking_failures": [],
+        "blocking_unknowns": [],
+        "caveats": ["inferred-caveat"],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "mainframe-approval-claim-not-checkable-003",
+      "title": "One successful run does not establish every future input",
+      "control_class": "hold_control",
+      "claim": {
+        "text": "The batch control will record approval correctly for every future input.",
+        "claim_type": "future_generalization"
+      },
+      "claim_hash": "f3faa4ea69cd7b328e9f4666a2264728ebb2b683675f074f53ffad169a905e25",
+      "evidence": [
+        {
+          "id": "eb-synthetic-run-003",
+          "source_ref": "fixture://mainframe/run-003/log",
+          "source_status": "available",
+          "excerpt": "Run RUN-003 recorded approval flag Y at completion.",
+          "evidence_hash": "13929a99a7461f19f777898d1c1a3b0d0b75c9fefcbe1e6c4ea45e5279c5688e"
+        }
+      ],
+      "cal": {
+        "support_verdict": "not_checkable",
+        "support_verdict_reason": "no_entail_signal",
+        "audit_flags": [],
+        "citation_status": "correct",
+        "audit_note": "The evidence establishes one observed run, not all future inputs."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The claim was reviewed; the limitation is evidentiary, not missing fixture coverage."
+      },
+      "expected_gate": {
+        "decision": "hold",
+        "blocking_failures": [],
+        "blocking_unknowns": ["cal-support-verdict"],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "mainframe-approval-claim-coverage-gap-004",
+      "title": "Missing audit coverage holds an otherwise supported item",
+      "control_class": "hold_control",
+      "claim": {
+        "text": "The sample batch run recorded approval flag Y.",
+        "claim_type": "run_observation"
+      },
+      "claim_hash": "3a2d3a82446b703fb57f1e59c2c12031139853c941fa6c120a3e7b215b4d315b",
+      "evidence": [
+        {
+          "id": "eb-synthetic-run-004",
+          "source_ref": "fixture://mainframe/run-004/log",
+          "source_status": "available",
+          "excerpt": "Run RUN-004 recorded approval flag Y at completion.",
+          "evidence_hash": "a566e8d659336ce061483193e9f39ddf0d7b87a4c040f6661356cfc090aae3d8"
+        }
+      ],
+      "cal": {
+        "support_verdict": "supported",
+        "support_verdict_reason": null,
+        "audit_flags": [],
+        "citation_status": "correct",
+        "audit_note": "The claim/evidence pair is supplied, but the completeness receipt for the audit set is absent."
+      },
+      "coverage": {
+        "status": "not_checkable",
+        "note": "No coverage receipt is supplied for the surrounding claim set."
+      },
+      "expected_gate": {
+        "decision": "hold",
+        "blocking_failures": [],
+        "blocking_unknowns": ["audit-coverage"],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "mainframe-approval-claim-contradicted-005",
+      "title": "The evidence records the opposite flag",
+      "control_class": "negative_control",
+      "claim": {
+        "text": "The sample batch run recorded approval flag N.",
+        "claim_type": "run_observation"
+      },
+      "claim_hash": "4f15e5768239a555e0328860dba20f33028c7192af9d4015b7a99c3a7cbd8657",
+      "evidence": [
+        {
+          "id": "eb-synthetic-run-005",
+          "source_ref": "fixture://mainframe/run-005/log",
+          "source_status": "available",
+          "excerpt": "Run RUN-005 recorded approval flag Y at completion.",
+          "evidence_hash": "1e9c3a18e716a72f50c6c4a7730d84a765c8cd3873d6095a7fcaef3bb24e1b1b"
+        }
+      ],
+      "cal": {
+        "support_verdict": "contradicted",
+        "support_verdict_reason": null,
+        "audit_flags": [],
+        "citation_status": "correct",
+        "audit_note": "The evidence directly records the opposite value for the same bounded run observation."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The contradiction is in the supplied claim/evidence pair."
+      },
+      "expected_gate": {
+        "decision": "reject",
+        "blocking_failures": ["cal-support-verdict"],
+        "blocking_unknowns": [],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "mainframe-approval-claim-overstated-006",
+      "title": "A one-run observation cannot carry an absolute claim",
+      "control_class": "negative_control",
+      "claim": {
+        "text": "The batch control always records approval correctly.",
+        "claim_type": "unbounded_generalization"
+      },
+      "claim_hash": "7c56c57bb2c1ae2fd532f3d7e9520aa7f4a1e90f5b4ec72564d428752128a578",
+      "evidence": [
+        {
+          "id": "eb-synthetic-run-006",
+          "source_ref": "fixture://mainframe/run-006/log",
+          "source_status": "available",
+          "excerpt": "The fixture expected approval flag Y for RUN-006, and the completion record shows approval flag Y.",
+          "evidence_hash": "0e806d7d49ce7d1e199bbf6bf204a8da590b96e5b9889e43008da29a3e153252"
+        }
+      ],
+      "cal": {
+        "support_verdict": "partially_supported",
+        "support_verdict_reason": null,
+        "audit_flags": ["overstated"],
+        "citation_status": "correct",
+        "audit_note": "The source supports one observed run, not the universal wording of the claim."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The exact claim is in scope; its wording exceeds the evidence."
+      },
+      "expected_gate": {
+        "decision": "reject",
+        "blocking_failures": ["cal-support-verdict", "blocking-audit-flags"],
+        "blocking_unknowns": [],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "incident-citation-provenance-quarantined-007",
+      "title": "Plausible body, quarantined citation authority",
+      "control_class": "negative_control",
+      "origin": {
+        "kind": "sanitized_incident_pattern",
+        "pattern": "citation-shaped record retained with quarantine status",
+        "raw_material_included": false,
+        "calibration_gold": false,
+        "evaluation_use": "shadow_only"
+      },
+      "claim": {
+        "text": "The audit packet has a published source proving that the batch control passed external validation.",
+        "claim_type": "external_validation_claim"
+      },
+      "claim_hash": "db3e66c3638d9173c672f0f93e294a3d65874b68a10aa929381728259c861dee",
+      "evidence": [
+        {
+          "id": "eb-incident-pattern-quarantined-007",
+          "source_ref": "fixture://incident/quarantined-citation-007",
+          "source_status": "quarantined",
+          "excerpt": "[source excerpt intentionally withheld: the citation-shaped record has no verified source]",
+          "evidence_hash": "7a81796915721f8e16aa8e16a2fcd90c6bb73ddb0f8ed0e6980eb5e13a082414"
+        }
+      ],
+      "cal": {
+        "support_verdict": "not_checkable",
+        "support_verdict_reason": "no_evidence",
+        "audit_flags": [],
+        "citation_status": "wrong_source",
+        "audit_note": "The body may be plausible, but quarantined citation authority cannot carry a promotion recommendation."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The provenance failure is explicitly represented in the supplied observation."
+      },
+      "expected_gate": {
+        "decision": "reject",
+        "blocking_failures": ["source-admissibility", "citation-status"],
+        "blocking_unknowns": ["cal-support-verdict"],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    },
+    {
+      "id": "incident-citation-provenance-unresolved-008",
+      "title": "Missing citation authority is not silently upgraded",
+      "control_class": "negative_control",
+      "origin": {
+        "kind": "sanitized_incident_pattern",
+        "pattern": "unresolved identifier requiring manual review",
+        "raw_material_included": false,
+        "calibration_gold": false,
+        "evaluation_use": "shadow_only"
+      },
+      "claim": {
+        "text": "The audit packet cites a source that establishes that the batch control passed external validation.",
+        "claim_type": "external_validation_claim"
+      },
+      "claim_hash": "8854c8a191fbe0eda49df3822fd0c74b8000e11b457c736d8aef9cfa41c46b8f",
+      "evidence": [
+        {
+          "id": "eb-incident-pattern-unresolved-008",
+          "source_ref": "fixture://incident/unresolved-citation-008",
+          "source_status": "missing",
+          "excerpt": "[no source excerpt supplied: the identifier remains unresolved and requires manual review]",
+          "evidence_hash": "ddc655fb000cf9e6cdda66451dfe119c02267451af8e98baa33f445c4d778a97"
+        }
+      ],
+      "cal": {
+        "support_verdict": "not_checkable",
+        "support_verdict_reason": "no_evidence",
+        "audit_flags": [],
+        "citation_status": "missing_needed",
+        "audit_note": "An unresolved identifier is a provenance gap, not by itself a fabrication finding."
+      },
+      "coverage": {
+        "status": "complete",
+        "note": "The fixture tests the hold/reject boundary after unresolved-source review."
+      },
+      "expected_gate": {
+        "decision": "reject",
+        "blocking_failures": ["source-admissibility", "citation-status"],
+        "blocking_unknowns": ["cal-support-verdict"],
+        "caveats": [],
+        "requires_human_approval": true,
+        "applied_automatically": false,
+        "mainframe_status_mutation": null
+      }
+    }
+  ]
+}
