@@ -68,3 +68,6 @@ jobs:
 
       - name: Run Gate head tests
         run: node --test tests/gateHead.test.mjs
+
+      - name: Run Contract C seam fixture check
+        run: node research/contract-c-seam-shadow/validate-fixtures.mjs
