@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - research/contract-c-rc2-consumer-b-clean-room
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
