@@ -1,0 +1,100 @@
+name: Contract C RC2 Consumer B Integrity
+
+on:
+  push:
+    branches:
+      - research/contract-c-rc2-consumer-b-clean-room
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-sealed-handoff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+
+      - name: Fetch exact frozen handoff commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git /tmp/apparatus-contracts
+          git -C /tmp/apparatus-contracts fetch --depth=1 origin 213ed9e912b922bd5c57ef58009eb6b0d7fff398
+          git -C /tmp/apparatus-contracts checkout --detach 213ed9e912b922bd5c57ef58009eb6b0d7fff398
+          test "$(git -C /tmp/apparatus-contracts rev-parse HEAD)" = "213ed9e912b922bd5c57ef58009eb6b0d7fff398"
+          cp -R /tmp/apparatus-contracts/handoffs/contract-c/rc2-consumer-b /tmp/handoff
+
+      - name: Verify packaged SHA256SUMS
+        shell: bash
+        working-directory: /tmp/handoff
+        run: |
+          set -euo pipefail
+          sha256sum -c SHA256SUMS
+
+      - name: Run supplied transport verifier
+        shell: bash
+        working-directory: /tmp/handoff
+        run: |
+          set -euo pipefail
+          python3 verify_handoff.py
+
+      - name: Independently verify candidate and Contract-B identities
+        shell: bash
+        working-directory: /tmp/handoff
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, io, json, pathlib, zipfile
+          root = pathlib.Path('.')
+          manifest = json.loads((root/'MANIFEST.json').read_text())
+          candidate_path = root / manifest['candidate']['path']
+          candidate_bytes = candidate_path.read_bytes()
+          candidate_sha = hashlib.sha256(candidate_bytes).hexdigest()
+          expected_candidate = 'e142f4aab119751dc201bca7994c0f97636c65647489f7edbee823a7f8aee3b4'
+          assert candidate_sha == expected_candidate
+          assert candidate_sha == manifest['candidate']['sha256']
+
+          cbi = manifest['contract_b_input']
+          encoded = ''.join((root/p).read_text().rstrip('\n') for p in sorted(cbi['base64_parts']))
+          zip_bytes = base64.b64decode(encoded, validate=True)
+          zip_sha = hashlib.sha256(zip_bytes).hexdigest()
+          assert zip_sha == cbi['decoded_zip_sha256']
+
+          with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+              prefix = 'contract-b-1.2.0/'
+              sums = zf.read(prefix+'SHA256SUMS')
+              sums_sha = hashlib.sha256(sums).hexdigest()
+              assert sums_sha == cbi['sha256sums_sha256']
+              for line in sums.decode().splitlines():
+                  expected, rel = line.split('  ', 1)
+                  actual = hashlib.sha256(zf.read(prefix+rel)).hexdigest()
+                  assert actual == expected, (rel, actual, expected)
+              bundle_manifest = zf.read(prefix+'bundle_manifest.yaml').decode()
+              version = zf.read(prefix+'CONTRACT_VERSION').decode().strip()
+              assert version == cbi['contract_version']
+              assert f"bundle_id: {cbi['bundle_id']}" in bundle_manifest
+              assert f"bundle_hash: {cbi['bundle_hash']}" in bundle_manifest
+
+          receipt = {
+              'handoff_commit': '213ed9e912b922bd5c57ef58009eb6b0d7fff398',
+              'candidate_sha256': candidate_sha,
+              'candidate_result_set_id_manifest': manifest['candidate']['result_set_id'],
+              'contract_b_bundle_id': cbi['bundle_id'],
+              'contract_b_bundle_hash': cbi['bundle_hash'],
+              'contract_b_contract_version': cbi['contract_version'],
+              'contract_b_decoded_zip_sha256': zip_sha,
+              'contract_b_sha256sums_sha256': sums_sha,
+              'status': 'PASS',
+          }
+          pathlib.Path('/tmp/integrity_receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True)+'\n')
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Upload integrity receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-rc2-consumer-b-integrity-receipt
+          path: /tmp/integrity_receipt.json
+          if-no-files-found: error
