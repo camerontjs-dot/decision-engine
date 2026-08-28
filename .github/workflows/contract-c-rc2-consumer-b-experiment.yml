@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 research/contract-c-rc2-consumer-b/run_experiment.py \
+          python3 research/contract-c-rc2-consumer-b/run_corrected_consumer.py \
             --handoff /tmp/handoff \
             --out /tmp/consumer-b-results
 
