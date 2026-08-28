@@ -70,12 +70,12 @@ jobs:
               sums = zf.read(prefix+'SHA256SUMS')
               sums_sha = hashlib.sha256(sums).hexdigest()
               assert sums_sha == cbi['sha256sums_sha256']
-              for line in sums.decode().splitlines():
+              for line in sums.decode('utf-8').splitlines():
                   expected, rel = line.split('  ', 1)
                   actual = hashlib.sha256(zf.read(prefix+rel)).hexdigest()
                   assert actual == expected, (rel, actual, expected)
-              bundle_manifest = zf.read(prefix+'bundle_manifest.yaml').decode()
-              version = zf.read(prefix+'CONTRACT_VERSION').decode().strip()
+              bundle_manifest = zf.read(prefix+'bundle_manifest.yaml').decode('utf-8')
+              version = zf.read(prefix+'CONTRACT_VERSION').decode('utf-8').strip()
               assert version == cbi['contract_version']
               assert f"bundle_id: {cbi['bundle_id']}" in bundle_manifest
               assert f"bundle_hash: {cbi['bundle_hash']}" in bundle_manifest
@@ -95,7 +95,7 @@ jobs:
           print(json.dumps(receipt, sort_keys=True))
           PY
 
-      - name: Inventory allowed Contract-B structure
+      - name: Independently bind proposition text hashes from Contract-B YAML semantics
         shell: bash
         working-directory: /tmp/handoff
         run: |
@@ -107,34 +107,31 @@ jobs:
           cbi = manifest['contract_b_input']
           encoded = ''.join((root/p).read_text().rstrip('\n') for p in sorted(cbi['base64_parts']))
           zip_bytes = base64.b64decode(encoded, validate=True)
+          out = pathlib.Path('/tmp/contract-b-extracted')
+          out.mkdir(exist_ok=True)
           with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-              for name in sorted(zf.namelist()):
-                  if not name.endswith('/'):
-                      print(json.dumps({'name': name, 'size': len(zf.read(name))}, sort_keys=True))
+              zf.extractall(out)
           PY
-
-      - name: Inspect allowed Contract-B identity fields
-        shell: bash
-        working-directory: /tmp/handoff
-        run: |
-          set -euo pipefail
+          ruby -ryaml -rdigest -rjson - <<'RUBY' > /tmp/claim-hashes.json
+          root = '/tmp/contract-b-extracted/contract-b-1.2.0'
+          hashes = {}
+          Dir.glob(File.join(root, '**', '*.yaml')).sort.each do |path|
+            obj = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
+            next unless obj.is_a?(Hash) && obj.key?('claim_id') && obj.key?('claim_text')
+            claim_id = obj.fetch('claim_id').to_s
+            claim_text = obj.fetch('claim_text').to_s
+            hashes[claim_id] = Digest::SHA256.hexdigest(claim_text.encode('UTF-8'))
+          end
+          puts JSON.generate(hashes.sort.to_h)
+          RUBY
           python3 - <<'PY'
-          import base64, io, json, pathlib, re, zipfile
-          root = pathlib.Path('.')
-          manifest = json.loads((root/'MANIFEST.json').read_text())
-          cbi = manifest['contract_b_input']
-          encoded = ''.join((root/p).read_text().rstrip('\n') for p in sorted(cbi['base64_parts']))
-          zip_bytes = base64.b64decode(encoded, validate=True)
-          rx = re.compile(r'^\s*([A-Za-z0-9_]*(?:claim|proposition|passage|source|text|sha256|hash|bundle|version)[A-Za-z0-9_]*):\s*(.*?)\s*$')
-          with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-              for name in sorted(zf.namelist()):
-                  if not (name.endswith('.yaml') and ('/claims/' in name or '/evidence/' in name)):
-                      continue
-                  print('FILE', name)
-                  for line in zf.read(name).decode().splitlines():
-                      m = rx.match(line)
-                      if m:
-                          print(f"  {m.group(1)}: {m.group(2)}")
+          import json, pathlib
+          candidate = json.loads(pathlib.Path('contract-c-rc2-producer-candidate.json').read_text())
+          observed = json.loads(pathlib.Path('/tmp/claim-hashes.json').read_text())
+          expected = {p['proposition']['proposition_id']: p['proposition']['text_sha256'] for p in candidate['propositions']}
+          assert observed == expected, {'observed': observed, 'candidate': expected}
+          print('CONTRACT_B_CLAIM_TEXT_TO_PROPOSITION_HASH=PASS')
+          print(json.dumps(observed, sort_keys=True))
           PY
 
       - name: Upload integrity receipt
