@@ -109,21 +109,32 @@ jobs:
           zip_bytes = base64.b64decode(encoded, validate=True)
           with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
               for name in sorted(zf.namelist()):
-                  if name.endswith('/'):
+                  if not name.endswith('/'):
+                      print(json.dumps({'name': name, 'size': len(zf.read(name))}, sort_keys=True))
+          PY
+
+      - name: Inspect allowed Contract-B identity fields
+        shell: bash
+        working-directory: /tmp/handoff
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, io, json, pathlib, re, zipfile
+          root = pathlib.Path('.')
+          manifest = json.loads((root/'MANIFEST.json').read_text())
+          cbi = manifest['contract_b_input']
+          encoded = ''.join((root/p).read_text().rstrip('\n') for p in sorted(cbi['base64_parts']))
+          zip_bytes = base64.b64decode(encoded, validate=True)
+          rx = re.compile(r'^\s*([A-Za-z0-9_]*(?:claim|proposition|passage|source|text|sha256|hash|bundle|version)[A-Za-z0-9_]*):\s*(.*?)\s*$')
+          with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+              for name in sorted(zf.namelist()):
+                  if not (name.endswith('.yaml') and ('/claims/' in name or '/evidence/' in name)):
                       continue
-                  data = zf.read(name)
-                  info = {'name': name, 'size': len(data)}
-                  if name.endswith('.json'):
-                      obj = json.loads(data)
-                      info['json_type'] = type(obj).__name__
-                      if isinstance(obj, dict): info['top_keys'] = sorted(obj.keys())
-                      if isinstance(obj, list) and obj and isinstance(obj[0], dict): info['item_keys'] = sorted(obj[0].keys())
-                  elif name.endswith('.jsonl'):
-                      lines = [x for x in data.decode().splitlines() if x.strip()]
-                      if lines:
-                          obj = json.loads(lines[0])
-                          if isinstance(obj, dict): info['item_keys'] = sorted(obj.keys())
-                  print(json.dumps(info, sort_keys=True))
+                  print('FILE', name)
+                  for line in zf.read(name).decode().splitlines():
+                      m = rx.match(line)
+                      if m:
+                          print(f"  {m.group(1)}: {m.group(2)}")
           PY
 
       - name: Upload integrity receipt
