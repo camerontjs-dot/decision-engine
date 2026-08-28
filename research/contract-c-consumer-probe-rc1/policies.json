@@ -1,0 +1,422 @@
+{
+  "mainframe": {
+    "id": "mainframe-knowledge-posture",
+    "version": "rc1",
+    "requiresHumanApproval": true,
+    "actionAuthority": "MainFrame/operator",
+    "recommendations": {
+      "satisfied": "eligible_for_operator_review",
+      "unsatisfied": "not_eligible_as_written",
+      "unresolved": "hold_for_more_evidence",
+      "not_applicable": "not_applicable"
+    },
+    "criteria": [
+      {
+        "id": "execution-complete",
+        "severity": "blocking",
+        "path": "c.execution.status",
+        "valueOutcomes": {
+          "completed": "pass",
+          "partial": "unknown",
+          "failed": "unknown"
+        },
+        "unknownReason": "execution_incomplete"
+      },
+      {
+        "id": "cal-decided",
+        "severity": "blocking",
+        "path": "c.conclusion.disposition",
+        "valueOutcomes": {
+          "decided": "pass",
+          "abstained": "unknown",
+          "limited": "unknown"
+        },
+        "unknownReason": "cal_abstained"
+      },
+      {
+        "id": "claim-supportable",
+        "severity": "blocking",
+        "path": "c.conclusion.verdict",
+        "valueOutcomes": {
+          "supported": "pass",
+          "partially_supported": "unknown",
+          "unsupported": "fail",
+          "contradicted": "fail",
+          "not_checkable": "unknown"
+        },
+        "failReason": "claim_not_supportable",
+        "unknownReason": "policy_cannot_decide"
+      },
+      {
+        "id": "evidence-eligible",
+        "severity": "blocking",
+        "path": "c.assessments.eligibility",
+        "valueOutcomes": {
+          "eligible": "pass",
+          "ineligible": "fail",
+          "unknown": "unknown"
+        },
+        "failReason": "evidence_ineligible",
+        "unknownReasonPath": "c.assessments.eligibility_reason"
+      },
+      {
+        "id": "semantic-validity",
+        "severity": "blocking",
+        "path": "c.assessments.semantic_validity",
+        "valueOutcomes": {
+          "valid": "pass",
+          "invalid": "fail",
+          "unknown": "unknown"
+        },
+        "failReason": "semantic_invalid",
+        "unknownReasonPath": "c.assessments.semantic_validity_reason"
+      },
+      {
+        "id": "blocking-unknowns-clear",
+        "severity": "blocking",
+        "path": "c.conclusion.blocking_unknown_count",
+        "op": "eq",
+        "value": 0,
+        "mismatchOutcome": "unknown",
+        "unknownReason": "cal_unresolved_state"
+      },
+      {
+        "id": "aperture-complete-when-required",
+        "severity": "blocking",
+        "path": "c.assessments.aperture",
+        "applicability": {
+          "path": "context.require_complete_aperture",
+          "op": "eq",
+          "value": true
+        },
+        "valueOutcomes": {
+          "complete": "pass",
+          "incomplete": "fail",
+          "unknown": "unknown"
+        },
+        "failReason": "aperture_incomplete",
+        "unknownReasonPath": "c.assessments.aperture_reason"
+      }
+    ]
+  },
+  "publication": {
+    "id": "publication-claim-disposition",
+    "version": "rc1",
+    "requiresHumanApproval": true,
+    "actionAuthority": "publisher/operator",
+    "recommendations": {
+      "satisfied": "publishable_as_written",
+      "unsatisfied": "withhold_or_narrow",
+      "unresolved": "review_or_caveat",
+      "not_applicable": "not_applicable"
+    },
+    "criteria": [
+      {
+        "id": "execution-complete",
+        "severity": "blocking",
+        "path": "c.execution.status",
+        "valueOutcomes": {
+          "completed": "pass",
+          "partial": "unknown",
+          "failed": "unknown"
+        },
+        "unknownReason": "execution_incomplete"
+      },
+      {
+        "id": "cal-decided",
+        "severity": "blocking",
+        "path": "c.conclusion.disposition",
+        "valueOutcomes": {
+          "decided": "pass",
+          "abstained": "unknown",
+          "limited": "unknown"
+        },
+        "unknownReason": "cal_abstained"
+      },
+      {
+        "id": "claim-supported-as-written",
+        "severity": "blocking",
+        "path": "c.conclusion.verdict",
+        "valueOutcomes": {
+          "supported": "pass",
+          "partially_supported": "fail",
+          "unsupported": "fail",
+          "contradicted": "fail",
+          "overstated": "fail",
+          "not_checkable": "unknown"
+        },
+        "failReason": "claim_not_supportable_as_written",
+        "unknownReason": "policy_cannot_decide"
+      },
+      {
+        "id": "evidence-eligible",
+        "severity": "blocking",
+        "path": "c.assessments.eligibility",
+        "valueOutcomes": {
+          "eligible": "pass",
+          "ineligible": "fail",
+          "unknown": "unknown"
+        },
+        "failReason": "evidence_ineligible",
+        "unknownReasonPath": "c.assessments.eligibility_reason"
+      },
+      {
+        "id": "semantic-validity",
+        "severity": "blocking",
+        "path": "c.assessments.semantic_validity",
+        "valueOutcomes": {
+          "valid": "pass",
+          "invalid": "fail",
+          "unknown": "unknown"
+        },
+        "failReason": "semantic_invalid",
+        "unknownReasonPath": "c.assessments.semantic_validity_reason"
+      },
+      {
+        "id": "applicability",
+        "severity": "blocking",
+        "path": "c.assessments.applicability",
+        "valueOutcomes": {
+          "applicable": "pass",
+          "not_applicable": "not_applicable",
+          "unknown": "unknown"
+        },
+        "unknownReasonPath": "c.assessments.applicability_reason",
+        "notApplicableEffect": "policy"
+      },
+      {
+        "id": "aperture",
+        "severity": "blocking",
+        "path": "c.assessments.aperture",
+        "applicability": {
+          "path": "context.require_complete_aperture",
+          "op": "eq",
+          "value": true
+        },
+        "valueOutcomes": {
+          "complete": "pass",
+          "incomplete": "fail",
+          "unknown": "unknown"
+        },
+        "failReason": "aperture_incomplete",
+        "unknownReasonPath": "c.assessments.aperture_reason"
+      },
+      {
+        "id": "counterevidence-within-tolerance",
+        "severity": "blocking",
+        "path": "c.conclusion.counterevidence_count",
+        "op": "lte",
+        "value": 0,
+        "failReason": "material_counterevidence_present"
+      }
+    ]
+  },
+  "sop": {
+    "id": "sop-requirement-conformance",
+    "version": "rc1",
+    "requiresHumanApproval": true,
+    "actionAuthority": "quality-system/operator",
+    "recommendations": {
+      "satisfied": "conformance_supported",
+      "unsatisfied": "indeterminate",
+      "unresolved": "indeterminate",
+      "not_applicable": "requirement_not_applicable"
+    },
+    "recommendationRules": [
+      {
+        "state": "unsatisfied",
+        "when": {
+          "path": "c.conclusion.verdict",
+          "op": "eq",
+          "value": "contradicted"
+        },
+        "recommendation": "nonconformance_supported"
+      }
+    ],
+    "criteria": [
+      {
+        "id": "execution-complete",
+        "severity": "blocking",
+        "path": "c.execution.status",
+        "valueOutcomes": {
+          "completed": "pass",
+          "partial": "unknown",
+          "failed": "unknown"
+        },
+        "unknownReason": "execution_incomplete"
+      },
+      {
+        "id": "cal-decided",
+        "severity": "blocking",
+        "path": "c.conclusion.disposition",
+        "valueOutcomes": {
+          "decided": "pass",
+          "abstained": "unknown",
+          "limited": "unknown"
+        },
+        "unknownReason": "cal_abstained"
+      },
+      {
+        "id": "requirement-applicability",
+        "severity": "blocking",
+        "path": "c.assessments.applicability",
+        "valueOutcomes": {
+          "applicable": "pass",
+          "not_applicable": "not_applicable",
+          "unknown": "unknown"
+        },
+        "unknownReasonPath": "c.assessments.applicability_reason",
+        "notApplicableEffect": "policy"
+      },
+      {
+        "id": "evidence-eligible",
+        "severity": "blocking",
+        "path": "c.assessments.eligibility",
+        "valueOutcomes": {
+          "eligible": "pass",
+          "ineligible": "unknown",
+          "unknown": "unknown"
+        },
+        "unknownReason": "eligibility_blocks_conformance_judgment"
+      },
+      {
+        "id": "semantic-validity",
+        "severity": "blocking",
+        "path": "c.assessments.semantic_validity",
+        "valueOutcomes": {
+          "valid": "pass",
+          "invalid": "unknown",
+          "unknown": "unknown"
+        },
+        "unknownReason": "semantic_validity_blocks_conformance_judgment"
+      },
+      {
+        "id": "conformance-state",
+        "severity": "blocking",
+        "path": "c.conclusion.verdict",
+        "valueOutcomes": {
+          "supported": "pass",
+          "contradicted": "fail",
+          "partially_supported": "unknown",
+          "unsupported": "unknown",
+          "not_checkable": "unknown"
+        },
+        "failReason": "evidence_supports_nonconformance",
+        "unknownReason": "conformance_indeterminate"
+      },
+      {
+        "id": "aperture-sufficient",
+        "severity": "blocking",
+        "path": "c.assessments.aperture",
+        "valueOutcomes": {
+          "complete": "pass",
+          "incomplete": "unknown",
+          "unknown": "unknown"
+        },
+        "unknownReasonPath": "c.assessments.aperture_reason"
+      }
+    ]
+  },
+  "deviation": {
+    "id": "deviation-investigation-readiness",
+    "version": "rc1",
+    "requiresHumanApproval": true,
+    "actionAuthority": "investigation-owner/operator",
+    "recommendations": {
+      "satisfied": "decision_ready",
+      "unsatisfied": "further_investigation",
+      "unresolved": "further_investigation",
+      "not_applicable": "procedure_not_applicable"
+    },
+    "recommendationRules": [
+      {
+        "state": "satisfied",
+        "when": {
+          "path": "context.adverse_condition",
+          "op": "eq",
+          "value": "established"
+        },
+        "recommendation": "adverse_condition_established"
+      }
+    ],
+    "criteria": [
+      {
+        "id": "procedure-applicable",
+        "severity": "blocking",
+        "path": "context.procedure_applicability",
+        "valueOutcomes": {
+          "applicable": "pass",
+          "not_applicable": "not_applicable",
+          "unknown": "unknown"
+        },
+        "unknownReasonPath": "context.procedure_applicability_reason",
+        "notApplicableEffect": "policy"
+      },
+      {
+        "id": "execution-complete",
+        "severity": "blocking",
+        "path": "c.execution.status",
+        "valueOutcomes": {
+          "completed": "pass",
+          "partial": "unknown",
+          "failed": "unknown"
+        },
+        "unknownReason": "execution_incomplete"
+      },
+      {
+        "id": "cal-decided",
+        "severity": "blocking",
+        "path": "c.conclusion.disposition",
+        "valueOutcomes": {
+          "decided": "pass",
+          "abstained": "unknown",
+          "limited": "unknown"
+        },
+        "unknownReason": "cal_abstained"
+      },
+      {
+        "id": "event-scope-established",
+        "severity": "blocking",
+        "path": "context.event_scope",
+        "valueOutcomes": {
+          "established": "pass",
+          "unknown": "unknown"
+        },
+        "unknownReasonPath": "context.event_scope_reason"
+      },
+      {
+        "id": "causal-state-resolved",
+        "severity": "blocking",
+        "path": "context.causal_state",
+        "valueOutcomes": {
+          "resolved": "pass",
+          "unresolved": "unknown",
+          "unknown": "unknown"
+        },
+        "unknownReason": "causal_state_unresolved"
+      },
+      {
+        "id": "counterevidence-reviewed",
+        "severity": "blocking",
+        "path": "context.counterevidence_review",
+        "valueOutcomes": {
+          "complete": "pass",
+          "incomplete": "unknown",
+          "unknown": "unknown"
+        },
+        "unknownReason": "counterevidence_review_incomplete"
+      },
+      {
+        "id": "aperture-sufficient",
+        "severity": "blocking",
+        "path": "c.assessments.aperture",
+        "valueOutcomes": {
+          "complete": "pass",
+          "incomplete": "unknown",
+          "unknown": "unknown"
+        },
+        "unknownReasonPath": "c.assessments.aperture_reason"
+      }
+    ]
+  }
+}

@@ -1,0 +1,922 @@
+{
+  "schema": "contract-c-like-semantic-fixtures/rc1",
+  "frozen": true,
+  "fixtures": {
+    "base_supported_clean": {
+      "identity": {
+        "result_id": "c-result-base",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "supported_with_counterevidence": {
+      "identity": {
+        "result_id": "c-result-counterevidence",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 1
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 1,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "supported_unknown_aperture": {
+      "identity": {
+        "result_id": "c-result-unknown-aperture",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "unknown",
+        "aperture_reason": "aperture_unresolved",
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 1,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [
+        {
+          "type": "aperture_unresolved",
+          "field": "assessments.aperture"
+        }
+      ],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "supported_ineligible": {
+      "identity": {
+        "result_id": "c-result-ineligible",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "ineligible",
+        "eligibility_reason": "source_scope_ineligible",
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "supported_invalid_semantics": {
+      "identity": {
+        "result_id": "c-result-invalid",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "invalid",
+        "semantic_validity_reason": "claim_passage_mismatch",
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "not_applicable": {
+      "identity": {
+        "result_id": "c-result-not-applicable",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "not_applicable",
+        "applicability_reason": "requirement_out_of_scope"
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "abstained": {
+      "identity": {
+        "result_id": "c-result-abstained",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "abstained",
+        "verdict": "not_checkable",
+        "typed_reason": "insufficient_evidence",
+        "decision_basis": [],
+        "blocking_unknown_count": 1,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [
+        {
+          "type": "cal_abstained",
+          "field": "conclusion.disposition"
+        }
+      ],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "contradicted": {
+      "identity": {
+        "result_id": "c-result-contradicted",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "contradicted",
+        "typed_reason": "counterevidence_sufficient",
+        "decision_basis": [
+          "ev-c1",
+          "ev-c2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 2
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "partial_execution": {
+      "identity": {
+        "result_id": "c-result-partial",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "partial",
+        "deviations": [
+          {
+            "type": "operator_failure",
+            "operator": "semantic-assessor"
+          }
+        ]
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "limited",
+        "verdict": "not_checkable",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 1,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "missing_optional_policy_field": {
+      "identity": {
+        "result_id": "c-result-missing-aperture",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "malformed_missing_identity": {
+      "execution": {
+        "status": "completed"
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported"
+      }
+    },
+    "blocking_unknown_only": {
+      "identity": {
+        "result_id": "c-result-blocking-unknown",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 1,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "aperture_incomplete": {
+      "identity": {
+        "result_id": "c-result-aperture-incomplete",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "incomplete",
+        "aperture_reason": "coverage_gap",
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "supported",
+        "typed_reason": "support_sufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "unsupported": {
+      "identity": {
+        "result_id": "c-result-unsupported",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "unsupported",
+        "typed_reason": "support_insufficient",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    },
+    "partially_supported": {
+      "identity": {
+        "result_id": "c-result-partial-support",
+        "contract_b": {
+          "bundle_id": "b-001",
+          "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "version": "1.2.0"
+        },
+        "proposition": {
+          "id": "p-001",
+          "text": "The controlled process remained within the declared operating range.",
+          "hash": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"
+        },
+        "cal": {
+          "version": "0.4.0-research-baseline",
+          "policy_id": "cal-policy-a",
+          "policy_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        }
+      },
+      "execution": {
+        "status": "completed",
+        "deviations": []
+      },
+      "assessments": {
+        "eligibility": "eligible",
+        "eligibility_reason": null,
+        "semantic_validity": "valid",
+        "semantic_validity_reason": null,
+        "aperture": "complete",
+        "aperture_reason": null,
+        "applicability": "applicable",
+        "applicability_reason": null
+      },
+      "conclusion": {
+        "disposition": "decided",
+        "verdict": "partially_supported",
+        "typed_reason": "partial_support",
+        "decision_basis": [
+          "ev-1",
+          "ev-2"
+        ],
+        "blocking_unknown_count": 0,
+        "counterevidence_count": 0
+      },
+      "evidence": {
+        "support_count": 2,
+        "counterevidence_count": 0,
+        "citation_state": "complete"
+      },
+      "unknowns": [],
+      "telemetry": {
+        "retrieval_score": 0.91,
+        "nli_logit": 4.2,
+        "debug_order": [
+          "ev-2",
+          "ev-1"
+        ]
+      }
+    }
+  },
+  "contexts": {
+    "mainframe_default": {
+      "require_complete_aperture": false,
+      "destination": "mainframe"
+    },
+    "mainframe_strict": {
+      "require_complete_aperture": true,
+      "destination": "mainframe"
+    },
+    "publication_public": {
+      "require_complete_aperture": true,
+      "destination": "public_website"
+    },
+    "publication_internal": {
+      "require_complete_aperture": false,
+      "destination": "internal_draft"
+    },
+    "sop": {
+      "destination": "quality_system"
+    },
+    "deviation_ready": {
+      "destination": "investigation",
+      "procedure_applicability": "applicable",
+      "event_scope": "established",
+      "causal_state": "resolved",
+      "counterevidence_review": "complete",
+      "adverse_condition": "not_established"
+    },
+    "deviation_adverse": {
+      "destination": "investigation",
+      "procedure_applicability": "applicable",
+      "event_scope": "established",
+      "causal_state": "resolved",
+      "counterevidence_review": "complete",
+      "adverse_condition": "established"
+    },
+    "deviation_resolver_unavailable": {
+      "destination": "investigation",
+      "procedure_applicability": "applicable",
+      "event_scope": "unknown",
+      "event_scope_reason": "resolver_unavailable",
+      "causal_state": "resolved",
+      "counterevidence_review": "complete",
+      "adverse_condition": "not_established"
+    },
+    "deviation_not_applicable": {
+      "destination": "investigation",
+      "procedure_applicability": "not_applicable",
+      "event_scope": "unknown",
+      "causal_state": "unknown",
+      "counterevidence_review": "unknown",
+      "adverse_condition": "not_established"
+    },
+    "deviation_causal_unresolved": {
+      "destination": "investigation",
+      "procedure_applicability": "applicable",
+      "event_scope": "established",
+      "causal_state": "unresolved",
+      "counterevidence_review": "complete",
+      "adverse_condition": "not_established"
+    },
+    "deviation_counterevidence_incomplete": {
+      "destination": "investigation",
+      "procedure_applicability": "applicable",
+      "event_scope": "established",
+      "causal_state": "resolved",
+      "counterevidence_review": "incomplete",
+      "adverse_condition": "not_established"
+    }
+  }
+}
