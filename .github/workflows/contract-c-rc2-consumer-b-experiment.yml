@@ -1,0 +1,66 @@
+name: Contract C RC2 Consumer B Experiment
+
+on:
+  push:
+    branches:
+      - research/contract-c-rc2-consumer-b-clean-room
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-room-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated research branch
+        uses: actions/checkout@v4
+
+      - name: Fetch exact frozen handoff only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git /tmp/apparatus-contracts
+          git -C /tmp/apparatus-contracts fetch --depth=1 origin 213ed9e912b922bd5c57ef58009eb6b0d7fff398
+          git -C /tmp/apparatus-contracts checkout --detach 213ed9e912b922bd5c57ef58009eb6b0d7fff398
+          test "$(git -C /tmp/apparatus-contracts rev-parse HEAD)" = "213ed9e912b922bd5c57ef58009eb6b0d7fff398"
+          cp -R /tmp/apparatus-contracts/handoffs/contract-c/rc2-consumer-b /tmp/handoff
+
+      - name: Verify sealed handoff transport
+        shell: bash
+        working-directory: /tmp/handoff
+        run: |
+          set -euo pipefail
+          sha256sum -c SHA256SUMS
+          python3 verify_handoff.py
+
+      - name: Execute independent consumer and controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/contract-c-rc2-consumer-b/run_experiment.py \
+            --handoff /tmp/handoff \
+            --out /tmp/consumer-b-results
+
+      - name: Confirm terminal receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          receipt = json.loads(pathlib.Path('/tmp/consumer-b-results/experiment-receipt.json').read_text())
+          assert receipt['consumer_reproducibility'] in {'REPRODUCIBLE','NOT REPRODUCIBLE','INCONCLUSIVE'}
+          assert receipt['research_disposition'] in {'SUPPORTED FOR PROMOTION','FALSIFIED','INCONCLUSIVE','SUPERSEDED'}
+          print('consumer_reproducibility=' + receipt['consumer_reproducibility'])
+          print('research_disposition=' + receipt['research_disposition'])
+          PY
+
+      - name: Upload decisive experiment record
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-rc2-consumer-b-clean-room-result
+          path: /tmp/consumer-b-results/
+          if-no-files-found: error
