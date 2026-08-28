@@ -1,16 +1,23 @@
-## Context & Purpose
-<!-- Why does this change exist? What problem or user need does it address? -->
+## PR class
+<!-- Choose one: Research | Research Infrastructure | Promotion / Production | Maintenance / Documentation | Hotfix -->
 
-## Proposed Changes
-<!-- High-level bullet points describing what changed and key design decisions made -->
--
+## Bounded purpose / claim
+<!-- What exact question or change is this PR responsible for? -->
 
-## Verification & Test Receipts
-<!-- Commands executed and verified output. -->
-- [ ] Automated tests pass: `node tests/engine.sweep.mjs`, `node tests/output-quality.sweep.mjs`, `node tests/combination-matrix.sweep.mjs`, and `node --test tests/gateHead.test.mjs`
-- [ ] Verified on clean environment / worktree
+## Evidence / verification
+<!-- Research: expected test/falsifier and pinned evidence. Other classes: checks/receipts that justify the change. Hotfix: include the observed failure and regression test. -->
 
-## Security & Leak Prevention Checklist
-- [ ] No hardcoded local machine paths (`/Users/*`, `/home/*`)
-- [ ] No live API keys, tokens, or credentials in diff
-- [ ] `.env` and local caches remain ignored
+## Production impact
+<!-- What production behavior can change? If none, say so explicitly. -->
+
+## Failures / deviations
+<!-- Preserve failed runs, apparatus changes, warnings, or unexpected results. -->
+
+## Explicit non-claims
+<!-- What does this PR not establish, change, or authorize? -->
+
+## Research disposition
+<!-- Completed research only: SUPPORTED FOR PROMOTION | FALSIFIED | INCONCLUSIVE | SUPERSEDED. Otherwise: N/A. -->
+
+## Compatibility / version consequence
+<!-- Promotion only: compatibility class, migration consequence, and evidence basis. Hotfix: include rollback note. Otherwise: N/A. -->
