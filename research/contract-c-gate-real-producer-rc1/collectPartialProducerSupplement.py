@@ -116,7 +116,6 @@ def main() -> int:
                 update={
                     "claim_id": claim.id,
                     "claim_text": claim.text,
-                    "claim_type": claim.claim_type,
                 }
             )
         ],
@@ -170,8 +169,9 @@ def main() -> int:
             "contract_c_exporter_test_blob_sha": CAL_EXPORTER_TEST_BLOB_SHA,
         },
         "control_basis": {
-            "claim": claim.text,
-            "claim_type": claim.claim_type,
+            "semantic_claim": claim.text,
+            "semantic_claim_type": claim.claim_type,
+            "contract_b_claim_type_preserved": partial_contents.claims[0].claim_type,
             "evidence": evidence_text,
             "candidate_score": 0.69,
             "expected_current_rule_label": "partially_supported",
@@ -192,6 +192,7 @@ def main() -> int:
         "explicit_nonclaims": [
             "This controlled reachability case is not evidence of production traffic frequency.",
             "CAL source code, rules, thresholds, and exporter were not modified to create the state.",
+            "The Contract-B claim_type handoff role is preserved and is not overwritten by CAL semantic claim type.",
             "The input was selected before observing the Gate result from current CAL's already-frozen rule behavior.",
         ],
     }
