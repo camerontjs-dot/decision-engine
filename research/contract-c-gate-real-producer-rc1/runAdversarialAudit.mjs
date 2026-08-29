@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { evaluateExactContractCShadow } from "./hardenedContractCGateAdapter.mjs";
+import { evaluateExactContractCShadow } from "./exactByteContractCGateAdapter.mjs";
 
 const mutationDir = resolve(process.argv[2]);
 const receiptDir = resolve(process.argv[3]);
