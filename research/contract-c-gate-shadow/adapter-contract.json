@@ -1,0 +1,68 @@
+{
+  "id": "contract-c-gate-shadow-adapter",
+  "version": "0.1.0-rc0",
+  "research_only": true,
+  "decision_engine_base_sha": "cd5a471703e6682b7e8281bc954a135996cac58e",
+  "contract_authority": {
+    "repository": "camerontjs-dot/apparatus-contracts",
+    "sha": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+    "contract_c_version": "1.0.0",
+    "spec_path": "contract-c-v1.0.0.md",
+    "schema_path": "schema/contract-c/1.0.0/schema.json",
+    "validator_path": "validators/contract_c.py",
+    "canonical_fixture_path": "fixtures/contract-c/1.0.0/valid-canonical.json",
+    "canonical_fixture_sha256": "7a66583e332be4901d13ba9f2d7e12419938c77a41b83223a4b0946ad529b7a1"
+  },
+  "boundary": {
+    "semantic_authority": "Contract C",
+    "policy_authority": "explicit Gate bar",
+    "automatic_application_permitted": false,
+    "invalid_contract_behavior": "unknown_hold",
+    "free_text_semantic_interpretation": false,
+    "contribution_channel_interpretation": false
+  },
+  "source_kinds": {
+    "contract_conformance": {
+      "authority": "authoritative Contract C validator receipt",
+      "source_fields": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.sha",
+        "validation_receipt.authority.contract_c_version"
+      ],
+      "allowed_source_states": ["valid", "invalid", "unverified"],
+      "missing_behavior": "unknown",
+      "malformed_behavior": "unknown"
+    },
+    "result_set_execution": {
+      "source_fields": ["execution.state"],
+      "allowed_source_states": ["completed", "failed", "incomplete"],
+      "missing_behavior": "unknown",
+      "malformed_behavior": "unknown"
+    },
+    "proposition_execution": {
+      "source_fields": [
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion"
+      ],
+      "allowed_source_states": ["completed:assessed", "completed:not_checkable", "failed", "incomplete"],
+      "missing_behavior": "unknown",
+      "malformed_behavior": "unknown"
+    },
+    "assessment": {
+      "source_fields": [
+        "propositions[proposition_id].assessments[stage].state",
+        "propositions[proposition_id].assessments[stage].value"
+      ],
+      "allowed_source_states": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+      "missing_behavior": "unknown",
+      "malformed_behavior": "unknown"
+    },
+    "reported_verdict": {
+      "source_fields": ["propositions[proposition_id].conclusion.reported_verdict"],
+      "allowed_source_states_are_bar_declared": true,
+      "missing_behavior": "unknown",
+      "malformed_behavior": "unknown"
+    }
+  }
+}
