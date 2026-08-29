@@ -1,0 +1,180 @@
+{
+  "bars": [
+    {
+      "id": "cal-contract-c-shadow-strict-v1",
+      "version": "1.0.0-rc0",
+      "description": "Operator-only research bar. Contract C remains semantic authority; this bar declares only downstream acceptance policy.",
+      "requiresHumanApproval": true,
+      "criteria": [
+        {
+          "id": "contract-c-conformance",
+          "description": "The object has a valid receipt from the pinned authoritative Contract C validator.",
+          "severity": "blocking",
+          "source": {"kind": "contract_conformance"},
+          "allowedSourceStates": ["valid", "invalid", "unverified"],
+          "mapping": {"valid": "pass", "invalid": "unknown", "unverified": "unknown"},
+          "policyAuthority": "Apparatus Contract C schema/validator controls validity; invalidity is inability to consume, not adverse subject-matter evidence.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "result-set-execution",
+          "description": "CAL result-set execution completed.",
+          "severity": "blocking",
+          "source": {"kind": "result_set_execution"},
+          "allowedSourceStates": ["completed", "failed", "incomplete"],
+          "mapping": {"completed": "pass", "failed": "unknown", "incomplete": "unknown"},
+          "policyAuthority": "This research bar requires a completed result set; execution failure/incompleteness holds rather than manufactures rejection.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "proposition-execution",
+          "description": "The target proposition completed an assessed CAL execution.",
+          "severity": "blocking",
+          "source": {"kind": "proposition_execution"},
+          "allowedSourceStates": ["completed:assessed", "completed:not_checkable", "failed", "incomplete"],
+          "mapping": {"completed:assessed": "pass", "completed:not_checkable": "unknown", "failed": "unknown", "incomplete": "unknown"},
+          "policyAuthority": "A not-checkable, failed, or incomplete proposition is not an adverse conclusion under this bar.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "eligibility-state",
+          "description": "Eligibility has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "eligibility"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "This research bar explicitly treats an authoritative CAL eligibility adverse state as blocking failure; unexecuted/unknown/failed assessment remains unknown.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "semantic-validity-state",
+          "description": "Semantic validity has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "semantic_validity"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "This research bar explicitly treats an authoritative CAL semantic-validity adverse state as blocking failure; unexecuted/unknown/failed assessment remains unknown.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "aperture-completeness-state",
+          "description": "Aperture completeness has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "aperture_completeness"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "This research bar explicitly treats an authoritative CAL aperture-completeness adverse state as blocking failure; unexecuted/unknown/failed assessment remains unknown.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "temporal-applicability-state",
+          "description": "Temporal applicability has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "temporal_applicability"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "This research bar explicitly treats an authoritative CAL temporal-applicability adverse state as blocking failure; unexecuted/unknown/failed assessment remains unknown.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "reported-verdict",
+          "description": "The CAL-reported verdict clears this downstream bar.",
+          "severity": "blocking",
+          "source": {"kind": "reported_verdict"},
+          "allowedSourceStates": ["supported", "partially_supported", "unsupported", "contradicted", "not_checkable"],
+          "mapping": {"supported": "pass", "partially_supported": "unknown", "unsupported": "unknown", "contradicted": "fail", "not_checkable": "unknown"},
+          "policyAuthority": "The Gate bar, not the adapter, declares supported as pass and contradicted as blocking failure. Partial/unsupported/not-checkable do not become adverse rejection here.",
+          "automaticActionEligible": false
+        }
+      ]
+    },
+    {
+      "id": "cal-contract-c-shadow-contradiction-hold-v1",
+      "version": "1.0.0-rc0",
+      "description": "Policy-mutation control identical to the strict bar except contradicted is a hold rather than a rejection.",
+      "requiresHumanApproval": true,
+      "criteria": [
+        {
+          "id": "contract-c-conformance",
+          "description": "The object has a valid receipt from the pinned authoritative Contract C validator.",
+          "severity": "blocking",
+          "source": {"kind": "contract_conformance"},
+          "allowedSourceStates": ["valid", "invalid", "unverified"],
+          "mapping": {"valid": "pass", "invalid": "unknown", "unverified": "unknown"},
+          "policyAuthority": "Apparatus Contract C schema/validator controls validity; invalidity is inability to consume, not adverse subject-matter evidence.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "result-set-execution",
+          "description": "CAL result-set execution completed.",
+          "severity": "blocking",
+          "source": {"kind": "result_set_execution"},
+          "allowedSourceStates": ["completed", "failed", "incomplete"],
+          "mapping": {"completed": "pass", "failed": "unknown", "incomplete": "unknown"},
+          "policyAuthority": "This research bar requires a completed result set; execution failure/incompleteness holds rather than manufactures rejection.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "proposition-execution",
+          "description": "The target proposition completed an assessed CAL execution.",
+          "severity": "blocking",
+          "source": {"kind": "proposition_execution"},
+          "allowedSourceStates": ["completed:assessed", "completed:not_checkable", "failed", "incomplete"],
+          "mapping": {"completed:assessed": "pass", "completed:not_checkable": "unknown", "failed": "unknown", "incomplete": "unknown"},
+          "policyAuthority": "A not-checkable, failed, or incomplete proposition is not an adverse conclusion under this bar.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "eligibility-state",
+          "description": "Eligibility has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "eligibility"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "Explicit Gate policy; no adapter inference.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "semantic-validity-state",
+          "description": "Semantic validity has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "semantic_validity"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "Explicit Gate policy; no adapter inference.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "aperture-completeness-state",
+          "description": "Aperture completeness has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "aperture_completeness"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "Explicit Gate policy; no adapter inference.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "temporal-applicability-state",
+          "description": "Temporal applicability has no unresolved or adverse state under this frozen bar.",
+          "severity": "blocking",
+          "source": {"kind": "assessment", "stage": "temporal_applicability"},
+          "allowedSourceStates": ["not_performed", "performed:unknown", "performed:adverse", "not_applicable", "failed"],
+          "mapping": {"not_performed": "unknown", "performed:unknown": "unknown", "performed:adverse": "fail", "not_applicable": "pass", "failed": "unknown"},
+          "policyAuthority": "Explicit Gate policy; no adapter inference.",
+          "automaticActionEligible": false
+        },
+        {
+          "id": "reported-verdict",
+          "description": "The CAL-reported verdict clears this downstream bar.",
+          "severity": "blocking",
+          "source": {"kind": "reported_verdict"},
+          "allowedSourceStates": ["supported", "partially_supported", "unsupported", "contradicted", "not_checkable"],
+          "mapping": {"supported": "pass", "partially_supported": "unknown", "unsupported": "unknown", "contradicted": "unknown", "not_checkable": "unknown"},
+          "policyAuthority": "Policy-mutation control: contradicted is intentionally not adverse enough to reject under this bar.",
+          "automaticActionEligible": false
+        }
+      ]
+    }
+  ]
+}
