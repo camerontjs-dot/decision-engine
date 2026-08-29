@@ -1,0 +1,43 @@
+{
+  "barId": "cal-contract-c-human-claim-release-review-v1@1.0.0-rc1",
+  "status": "research-only-frozen",
+  "policyQuestion": "May this one CAL Contract C proposition advance to a human-controlled claim-release review stage?",
+  "allCriteriaBlocking": true,
+  "unknownsBlockPromotion": true,
+  "requiresHumanApproval": true,
+  "automaticApplicationPermitted": false,
+  "appliedAutomatically": false,
+  "mappings": {
+    "contractConformance": {
+      "valid_exact_object": "PASS",
+      "invalid": "UNKNOWN",
+      "unverified": "UNKNOWN",
+      "mismatched": "UNKNOWN"
+    },
+    "resultExecution": {
+      "completed": "PASS",
+      "failed": "UNKNOWN",
+      "incomplete": "UNKNOWN"
+    },
+    "propositionExecution": {
+      "completed:assessed": "PASS",
+      "completed:not_checkable": "UNKNOWN",
+      "failed": "UNKNOWN",
+      "incomplete": "UNKNOWN"
+    },
+    "reportedVerdict": {
+      "supported": "PASS",
+      "overstated": "FAIL",
+      "partially_supported": "UNKNOWN",
+      "unsupported": "UNKNOWN",
+      "needs_source": "UNKNOWN",
+      "not_checkable": "UNKNOWN"
+    },
+    "unmappedOrFutureValue": "UNKNOWN",
+    "missingOrMalformed": "UNKNOWN"
+  },
+  "consumedAssessmentStages": [],
+  "consumedContributionFields": [],
+  "consumedMeasurements": [],
+  "selectRankPermitted": false
+}

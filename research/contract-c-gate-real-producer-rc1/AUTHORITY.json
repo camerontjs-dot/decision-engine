@@ -1,0 +1,31 @@
+{
+  "frozenAt": "2026-08-29",
+  "decisionEngine": {
+    "repository": "camerontjs-dot/decision-engine",
+    "mainShaAtInspection": "cd5a471703e6682b7e8281bc954a135996cac58e",
+    "machineryAuditPr": 11,
+    "machineryAuditHead": "e0d0f0b352a10a8a3441e0195eea2032ec2325e9",
+    "rc0Pr": 12,
+    "rc0Head": "9b5c1594927ae45f035d0f1fa4c5fff4935a6f46",
+    "rc1Base": "9b5c1594927ae45f035d0f1fa4c5fff4935a6f46"
+  },
+  "contractC": {
+    "repository": "camerontjs-dot/apparatus-contracts",
+    "mainShaAtInspection": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+    "version": "1.0.0",
+    "releaseTag": "contract-c-v1.0.0",
+    "annotatedTagObjectSha": "6bd135a948e407212b2e77ec18ac5c402f93565e",
+    "releaseCommitSha": "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1",
+    "validatorBlobSha": "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4",
+    "schemaBlobSha": "b0369de9b5c156322d6787261bbc7658a3b33781",
+    "canonicalFixtureBlobSha": "38b2271fc31ffa7683c09a486a8919572fc2f1a4",
+    "canonicalFixtureSha256": "7a66583e332be4901d13ba9f2d7e12419938c77a41b83223a4b0946ad529b7a1"
+  },
+  "cal": {
+    "repository": "camerontjs-dot/claim-audit-lab",
+    "mainShaAtInspection": "53f0885b111676794d1bd20e10b91aa58b07e9d4",
+    "contractCExporterBlobSha": "d6b32a44ef11109fe0ee91efa212d3904badf58c",
+    "contractCProductionMerge": "a069707e5031cef5b82af02d08b0f1a47ea8752e",
+    "semanticImplementationShaEmbeddedByExporter": "33a928db97316a3652d57df9cafb8ca240305233"
+  }
+}
