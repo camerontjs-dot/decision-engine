@@ -1,0 +1,78 @@
+name: Contract C 1.0.0 clean-consumer release conformance
+
+on:
+  push:
+    branches:
+      - research/contract-c-1.0.0-clean-consumer-release
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/contract-c-1.0.0-clean-consumer-release/**'
+      - '.github/workflows/contract-c-1.0.0-clean-consumer-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine harness only
+        uses: actions/checkout@v4
+
+      - name: Checkout frozen public Contract C candidate
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 5759985ee0ae82c469a129152b2eac278b30e919
+          path: _external/apparatus-contract-c
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify isolation and frozen authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _external/apparatus-contract-c rev-parse HEAD)" =             "5759985ee0ae82c469a129152b2eac278b30e919"
+          test ! -d _external/claim-audit-lab
+          test ! -d _external/cal
+          git diff --exit-code cd5a471703e6682b7e8281bc954a135996cac58e -- src tests
+
+      - name: Run independent clean-consumer release conformance
+        env:
+          APPARATUS_CONTRACT_C_DIR: _external/apparatus-contract-c
+        run: |
+          mkdir -p build/contract-c-clean-consumer
+          node research/contract-c-1.0.0-clean-consumer-release/validate.mjs             | tee build/contract-c-clean-consumer/receipt.json
+
+      - name: Run existing Decision Engine CI tests
+        run: |
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - name: Record pinned release-gate identities
+        shell: bash
+        run: |
+          cat > build/contract-c-clean-consumer/identities.json <<'JSON'
+          {
+            "apparatus_contract_c_head": "5759985ee0ae82c469a129152b2eac278b30e919",
+            "cal_exporter_head": "095d0fc0d4a8746a1b5296d9414ba9e6e173dc96",
+            "decision_engine_base": "cd5a471703e6682b7e8281bc954a135996cac58e",
+            "consumer_used_cal_internals": false
+          }
+          JSON
+
+      - name: Upload clean-consumer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-1.0.0-clean-consumer-release-conformance
+          path: build/contract-c-clean-consumer
+          if-no-files-found: error
+          retention-days: 90
