@@ -1,0 +1,76 @@
+name: Research - Contract C Gate shadow adapter RC0
+
+on:
+  push:
+    branches:
+      - research-infra/contract-c-gate-shadow-rc0
+  pull_request:
+    paths:
+      - "research/contract-c-gate-shadow/**"
+      - ".github/workflows/research-contract-c-gate-shadow.yml"
+      - "src/gate/**"
+      - "tests/gateHead.test.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  shadow-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Decision Engine
+        uses: actions/checkout@v4
+
+      - name: Check out pinned Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e
+          path: external/apparatus-contracts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pinned Contract C validator dependencies
+        run: python -m pip install -e external/apparatus-contracts
+
+      - name: Existing Gate baseline
+        run: node --test tests/gateHead.test.mjs
+
+      - name: Cross-repository Contract C conformance
+        env:
+          CONTRACT_C_AUTHORITY_ROOT: external/apparatus-contracts
+        run: |
+          mkdir -p artifacts/contract-c-gate-shadow
+          node research/contract-c-gate-shadow/cross-repo-conformance.mjs \
+            | tee artifacts/contract-c-gate-shadow/cross-repo-conformance.json
+
+      - name: Adapter fixture and mutation tests
+        env:
+          CONTRACT_C_AUTHORITY_ROOT: external/apparatus-contracts
+        run: node --test research/contract-c-gate-shadow/tests/contractCGateShadowAdapter.test.mjs
+
+      - name: Shadow experiment receipt
+        env:
+          CONTRACT_C_AUTHORITY_ROOT: external/apparatus-contracts
+        run: |
+          node research/contract-c-gate-shadow/run-shadow-experiment.mjs \
+            | tee artifacts/contract-c-gate-shadow/shadow-receipt.json
+
+      - name: Hash research artifacts
+        run: |
+          cd artifacts/contract-c-gate-shadow
+          sha256sum cross-repo-conformance.json shadow-receipt.json > SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-c-gate-shadow-${{ github.sha }}
+          path: artifacts/contract-c-gate-shadow/
+          if-no-files-found: warn
+          retention-days: 30
