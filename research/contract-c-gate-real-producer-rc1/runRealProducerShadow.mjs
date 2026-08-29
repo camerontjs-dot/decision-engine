@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { evaluateExactContractCShadow } from "./hardenedContractCGateAdapter.mjs";
+import { evaluateExactContractCShadow } from "./exactByteContractCGateAdapter.mjs";
 import { evaluateContractCShadow } from "../contract-c-gate-shadow/contractCGateShadowAdapter.mjs";
 
 const corpusDir = resolve(process.argv[2]);
