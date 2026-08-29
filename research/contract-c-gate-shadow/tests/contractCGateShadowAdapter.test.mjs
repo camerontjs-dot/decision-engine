@@ -180,6 +180,29 @@ test("extra Contract C v1 field is held because the authoritative schema rejects
   assert.equal(criterion(result, "contract-c-conformance").observed.sourceState, "invalid");
 });
 
+test("invalid Contract C cannot reject even when an adverse-looking field is present", () => {
+  const result = evaluate("invalid-adverse", strictBar, false);
+  assert.equal(result.finalDecision, "hold");
+  assert.deepEqual(result.blockingFailures, []);
+  assert.equal(criterion(result, "contract-c-conformance").observed.sourceState, "invalid");
+  const verdict = criterion(result, "reported-verdict");
+  assert.equal(verdict.observed.sourceState, "contradicted");
+  assert.equal(verdict.observed.mappingStatus, "blocked_by_contract_conformance");
+  assert.equal(verdict.outcome, "unknown");
+});
+
+test("missing validation receipt blocks adverse mappings and holds", () => {
+  const contractC = fixture("explicit-adverse");
+  const result = evaluateContractCShadow({ contractC, validationReceipt: null, propositionId: "clm-md", barSpec: strictBar });
+  assert.equal(result.finalDecision, "hold");
+  assert.deepEqual(result.blockingFailures, []);
+  assert.equal(criterion(result, "contract-c-conformance").observed.sourceStatus, "missing");
+  const semantic = criterion(result, "semantic-validity-state");
+  assert.equal(semantic.observed.sourceState, "performed:adverse");
+  assert.equal(semantic.observed.mappingStatus, "blocked_by_contract_conformance");
+  assert.equal(semantic.outcome, "unknown");
+});
+
 test("contradiction policy mutation changes decision only through bar policy", () => {
   const strict = evaluate("contradicted", strictBar, true);
   const holding = evaluate("contradicted", contradictionHoldBar, true);
