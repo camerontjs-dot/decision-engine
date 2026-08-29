@@ -218,10 +218,16 @@ export function compileGateBar(barSpec) {
       severity: spec.severity,
       evaluate(item) {
         const observed = extractSource(item, spec.source);
+        const conformance = extractConformance(item);
+        const conformanceEstablished =
+          conformance.sourceStatus === "present" && conformance.sourceState === "valid";
         let outcome = OUTCOME.UNKNOWN;
         let mappingStatus = "not_applied";
         let note = null;
-        if (observed.sourceStatus === "missing") {
+        if (spec.source.kind !== "contract_conformance" && !conformanceEstablished) {
+          mappingStatus = "blocked_by_contract_conformance";
+          note = "Contract C conformance was not established; source mapping was not applied";
+        } else if (observed.sourceStatus === "missing") {
           note = "required mapped source state is missing";
         } else if (observed.sourceStatus === "malformed") {
           note = "mapped source state is malformed";
