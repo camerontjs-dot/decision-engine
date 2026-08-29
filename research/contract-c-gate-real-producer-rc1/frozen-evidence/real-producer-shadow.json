@@ -1,0 +1,374 @@
+{
+  "status": "PASS",
+  "real_producer_cases": 6,
+  "observed_reported_verdicts": [
+    "needs_source",
+    "not_checkable",
+    "overstated",
+    "supported",
+    "unsupported"
+  ],
+  "rc1_decision_counts": {
+    "promote": 2,
+    "hold": 3,
+    "reject": 1
+  },
+  "rows": [
+    {
+      "case_id": "production-minimal",
+      "reachability": "observed_from_current_CAL_exporter_official_test_pathway",
+      "object_sha256": "a6b03b66d77916b62a8cf668a4c683529a45370687a09c3d2adb64c2c2bb53cc",
+      "result_set_id": "result-set:1c88860399aa28874e4d3caae3d9388e7461d1ce5102c251ecde32e22111549d",
+      "proposition_id": "clm-001",
+      "reported_verdict": "supported",
+      "proposition_execution": {
+        "completion": "assessed",
+        "state": "completed"
+      },
+      "assessment_states": {
+        "aperture_completeness": "not_performed",
+        "eligibility": "not_performed",
+        "semantic_validity": "not_performed",
+        "temporal_applicability": "not_performed"
+      },
+      "rc0_strict_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "eligibility-state",
+          "semantic-validity-state",
+          "aperture-completeness-state",
+          "temporal-applicability-state"
+        ]
+      },
+      "rc1_frozen_bar": {
+        "decision": "promote",
+        "blockingFailures": [],
+        "blockingUnknowns": [],
+        "sourceFieldsConsumed": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.main_sha",
+          "validation_receipt.authority.release_tag",
+          "validation_receipt.authority.release_commit",
+          "validation_receipt.authority.contract_c_version",
+          "validation_receipt.authority.validator_blob_sha",
+          "validation_receipt.object_sha256",
+          "validation_receipt.canonical_sha256",
+          "validation_receipt.result_set_id",
+          "execution.state",
+          "propositions[proposition_id].proposition.proposition_id",
+          "propositions[proposition_id].execution.state",
+          "propositions[proposition_id].execution.completion",
+          "propositions[proposition_id].conclusion.reported_verdict"
+        ]
+      },
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "case_id": "supported-tied-alternatives",
+      "reachability": "observed_from_current_CAL_exporter_official_test_pathway",
+      "object_sha256": "fce16ea2b6e578f1af1830f114f7a04e60ed9df46f0f9f4cdaf3bf54b69f3263",
+      "result_set_id": "result-set:f29d4c35e96acc747939e68eac808998ff8d8c3480569d755ccc0ab5d670de75",
+      "proposition_id": "clm-tied",
+      "reported_verdict": "supported",
+      "proposition_execution": {
+        "completion": "assessed",
+        "state": "completed"
+      },
+      "assessment_states": {
+        "aperture_completeness": "not_performed",
+        "eligibility": "not_performed",
+        "semantic_validity": "not_performed",
+        "temporal_applicability": "not_performed"
+      },
+      "rc0_strict_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "eligibility-state",
+          "semantic-validity-state",
+          "aperture-completeness-state",
+          "temporal-applicability-state"
+        ]
+      },
+      "rc1_frozen_bar": {
+        "decision": "promote",
+        "blockingFailures": [],
+        "blockingUnknowns": [],
+        "sourceFieldsConsumed": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.main_sha",
+          "validation_receipt.authority.release_tag",
+          "validation_receipt.authority.release_commit",
+          "validation_receipt.authority.contract_c_version",
+          "validation_receipt.authority.validator_blob_sha",
+          "validation_receipt.object_sha256",
+          "validation_receipt.canonical_sha256",
+          "validation_receipt.result_set_id",
+          "execution.state",
+          "propositions[proposition_id].proposition.proposition_id",
+          "propositions[proposition_id].execution.state",
+          "propositions[proposition_id].execution.completion",
+          "propositions[proposition_id].conclusion.reported_verdict"
+        ]
+      },
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "case_id": "unsupported-residual",
+      "reachability": "observed_from_current_CAL_exporter_official_test_pathway",
+      "object_sha256": "d116aa8d7be79a6006aa07cec7515bb0ea330aabbfa70b5af74a4d2021b5ad04",
+      "result_set_id": "result-set:1846a42e5adcd47d7bcb7a0aa630e54ac9c789e5ba862abcb7a338e3b0cb18af",
+      "proposition_id": "clm-residual",
+      "reported_verdict": "unsupported",
+      "proposition_execution": {
+        "completion": "assessed",
+        "state": "completed"
+      },
+      "assessment_states": {
+        "aperture_completeness": "not_performed",
+        "eligibility": "not_performed",
+        "semantic_validity": "not_performed",
+        "temporal_applicability": "not_performed"
+      },
+      "rc0_strict_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "eligibility-state",
+          "semantic-validity-state",
+          "aperture-completeness-state",
+          "temporal-applicability-state",
+          "reported-verdict"
+        ]
+      },
+      "rc1_frozen_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "reported-verdict"
+        ],
+        "sourceFieldsConsumed": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.main_sha",
+          "validation_receipt.authority.release_tag",
+          "validation_receipt.authority.release_commit",
+          "validation_receipt.authority.contract_c_version",
+          "validation_receipt.authority.validator_blob_sha",
+          "validation_receipt.object_sha256",
+          "validation_receipt.canonical_sha256",
+          "validation_receipt.result_set_id",
+          "execution.state",
+          "propositions[proposition_id].proposition.proposition_id",
+          "propositions[proposition_id].execution.state",
+          "propositions[proposition_id].execution.completion",
+          "propositions[proposition_id].conclusion.reported_verdict"
+        ]
+      },
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "case_id": "not-checkable-unclassified",
+      "reachability": "observed_from_current_CAL_exporter_official_test_pathway",
+      "object_sha256": "93b87afcb0e162aef2ade030d348e87ae2d24eff58e7b64c70a9f7f75701046d",
+      "result_set_id": "result-set:6b956fce451a1024119cf4cd6627fc041c41cd38458f0ea9e858b515c9430b2d",
+      "proposition_id": "clm-early",
+      "reported_verdict": "not_checkable",
+      "proposition_execution": {
+        "completion": "not_checkable",
+        "state": "completed"
+      },
+      "assessment_states": {
+        "aperture_completeness": "not_performed",
+        "eligibility": "not_performed",
+        "semantic_validity": "not_performed",
+        "temporal_applicability": "not_performed"
+      },
+      "rc0_strict_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "proposition-execution",
+          "eligibility-state",
+          "semantic-validity-state",
+          "aperture-completeness-state",
+          "temporal-applicability-state",
+          "reported-verdict"
+        ]
+      },
+      "rc1_frozen_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "proposition-execution",
+          "reported-verdict"
+        ],
+        "sourceFieldsConsumed": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.main_sha",
+          "validation_receipt.authority.release_tag",
+          "validation_receipt.authority.release_commit",
+          "validation_receipt.authority.contract_c_version",
+          "validation_receipt.authority.validator_blob_sha",
+          "validation_receipt.object_sha256",
+          "validation_receipt.canonical_sha256",
+          "validation_receipt.result_set_id",
+          "execution.state",
+          "propositions[proposition_id].proposition.proposition_id",
+          "propositions[proposition_id].execution.state",
+          "propositions[proposition_id].execution.completion",
+          "propositions[proposition_id].conclusion.reported_verdict"
+        ]
+      },
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "case_id": "needs-source-credential",
+      "reachability": "observed_from_current_CAL_exporter_official_test_pathway",
+      "object_sha256": "650f88ae1eb36d7f0ebeacd77431a31e83baf71e808270a8e50a9f6dc43e9328",
+      "result_set_id": "result-set:f0a07c9d270ad8af7a1e7297bb73b7a6bad5801f65de8d91a390d1fcd0c73a51",
+      "proposition_id": "clm-credential",
+      "reported_verdict": "needs_source",
+      "proposition_execution": {
+        "completion": "assessed",
+        "state": "completed"
+      },
+      "assessment_states": {
+        "aperture_completeness": "not_performed",
+        "eligibility": "not_performed",
+        "semantic_validity": "not_performed",
+        "temporal_applicability": "not_performed"
+      },
+      "rc0_strict_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "eligibility-state",
+          "semantic-validity-state",
+          "aperture-completeness-state",
+          "temporal-applicability-state",
+          "reported-verdict"
+        ]
+      },
+      "rc1_frozen_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "reported-verdict"
+        ],
+        "sourceFieldsConsumed": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.main_sha",
+          "validation_receipt.authority.release_tag",
+          "validation_receipt.authority.release_commit",
+          "validation_receipt.authority.contract_c_version",
+          "validation_receipt.authority.validator_blob_sha",
+          "validation_receipt.object_sha256",
+          "validation_receipt.canonical_sha256",
+          "validation_receipt.result_set_id",
+          "execution.state",
+          "propositions[proposition_id].proposition.proposition_id",
+          "propositions[proposition_id].execution.state",
+          "propositions[proposition_id].execution.completion",
+          "propositions[proposition_id].conclusion.reported_verdict"
+        ]
+      },
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "case_id": "overstated-joint-state",
+      "reachability": "observed_from_current_CAL_exporter_official_test_pathway",
+      "object_sha256": "219e38b5c4c0e33e5906541171afeecc0ee1ec918d2583feb1e7637985d24c02",
+      "result_set_id": "result-set:13a30471e50a84d0f1e7e72913c3aee2ad0bf5e435b6b41fe51d313cba7ba006",
+      "proposition_id": "clm-joint",
+      "reported_verdict": "overstated",
+      "proposition_execution": {
+        "completion": "assessed",
+        "state": "completed"
+      },
+      "assessment_states": {
+        "aperture_completeness": "not_performed",
+        "eligibility": "not_performed",
+        "semantic_validity": "not_performed",
+        "temporal_applicability": "not_performed"
+      },
+      "rc0_strict_bar": {
+        "decision": "hold",
+        "blockingFailures": [],
+        "blockingUnknowns": [
+          "eligibility-state",
+          "semantic-validity-state",
+          "aperture-completeness-state",
+          "temporal-applicability-state",
+          "reported-verdict"
+        ]
+      },
+      "rc1_frozen_bar": {
+        "decision": "reject",
+        "blockingFailures": [
+          "reported-verdict"
+        ],
+        "blockingUnknowns": [],
+        "sourceFieldsConsumed": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.main_sha",
+          "validation_receipt.authority.release_tag",
+          "validation_receipt.authority.release_commit",
+          "validation_receipt.authority.contract_c_version",
+          "validation_receipt.authority.validator_blob_sha",
+          "validation_receipt.object_sha256",
+          "validation_receipt.canonical_sha256",
+          "validation_receipt.result_set_id",
+          "execution.state",
+          "propositions[proposition_id].proposition.proposition_id",
+          "propositions[proposition_id].execution.state",
+          "propositions[proposition_id].execution.completion",
+          "propositions[proposition_id].conclusion.reported_verdict"
+        ]
+      },
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    }
+  ],
+  "rc0_reconciliation": {
+    "all_current_cal_exporter_cases_hold_under_rc0_strict_bar": true,
+    "reason": "Current CAL Contract C exporter emits all four assessment slots as not_performed; RC0 strict bar maps those states to UNKNOWN. This is consistent with RC0's recorded canonical real-producer HOLD limitation."
+  },
+  "contract_c_sufficiency": {
+    "result": "WORKS_WITHOUT_GENERIC_PERFORMED_PASS",
+    "basis": "The preregistered real downstream bar consumes no assessment slots. Exact conformance, completed execution, and reported_verdict are sufficient for this bounded human-review admission question without reinterpreting not_performed as pass."
+  },
+  "select_rank": {
+    "used": false,
+    "comparative_choice_required": false
+  }
+}

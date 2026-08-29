@@ -1,0 +1,48 @@
+{
+  "status": "COUNTEREXAMPLE_CONFIRMED",
+  "claim": "RC0 receipt valid for object A can be replayed onto different object B because RC0 does not bind receipt to exact bytes",
+  "object_a": {
+    "fixture": "clear-positive",
+    "authoritative_receipt_object_sha256": "0871ceaee1f3142b6846ec9978fd484f084603b5a6b52b4c47da6661601b4903"
+  },
+  "object_b": {
+    "fixture": "explicit-adverse-assessment",
+    "actual_sha256": "0bb82b2ad79f9e1d8beb778ecf87d42c526112d7b9d3faf7c5d3141b7eec2130"
+  },
+  "rc0_result_on_object_b_with_receipt_a": {
+    "finalDecision": "reject",
+    "blockingFailures": [
+      "semantic-validity-state"
+    ],
+    "conformanceCriterion": {
+      "id": "contract-c-conformance",
+      "description": "The object has a valid receipt from the pinned authoritative Contract C validator.",
+      "severity": "blocking",
+      "outcome": "pass",
+      "observed": {
+        "sourceFields": [
+          "validation_receipt.valid",
+          "validation_receipt.authority.repository",
+          "validation_receipt.authority.sha",
+          "validation_receipt.authority.contract_c_version"
+        ],
+        "sourceStatus": "present",
+        "sourceState": "valid",
+        "rawValue": {
+          "valid": true,
+          "authority": {
+            "repository": "camerontjs-dot/apparatus-contracts",
+            "sha": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+            "contract_c_version": "1.0.0"
+          },
+          "validated_object_sha256_ignored_by_rc0": "0871ceaee1f3142b6846ec9978fd484f084603b5a6b52b4c47da6661601b4903"
+        },
+        "mappingStatus": "mapped",
+        "policyAuthority": "Apparatus Contract C schema/validator controls validity; invalidity is inability to consume, not adverse subject-matter evidence.",
+        "automaticActionEligible": false
+      },
+      "note": null
+    }
+  },
+  "preservation": "This is new RC1 evidence. It does not rewrite the frozen RC0 terminal record; it narrows the authority claim for successor work."
+}

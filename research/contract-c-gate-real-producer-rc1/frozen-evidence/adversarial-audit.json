@@ -1,0 +1,452 @@
+{
+  "status": "PASS",
+  "question": "Can untrusted semantic-looking content acquire policy authority before the exact authoritative Contract C object is established?",
+  "answer": "NO_ON_TESTED_RC1_SURFACE",
+  "cases": [
+    {
+      "id": "schema-invalid-object-plus-adverse-verdict",
+      "conformance_state": "invalid",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "wrong-contract-c-version",
+      "conformance_state": "mismatched",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "mismatched-result-set-identity",
+      "conformance_state": "invalid",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "malformed-assessment-state",
+      "conformance_state": "invalid",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "additional-unknown-field",
+      "conformance_state": "invalid",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "altered-canonical-hash",
+      "conformance_state": "mismatched",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "mismatched-proposition-identity",
+      "conformance_state": "valid_exact_object",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "missing-validator-receipt",
+      "conformance_state": "unverified",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "validator-receipt-for-different-bytes",
+      "conformance_state": "mismatched",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      },
+      "receipt_object_sha256": "0871ceaee1f3142b6846ec9978fd484f084603b5a6b52b4c47da6661601b4903"
+    },
+    {
+      "id": "wrong-validator-version",
+      "conformance_state": "mismatched",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "contract-c-conformance",
+        "result-set-execution",
+        "proposition-execution",
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "unknown-future-reported-verdict",
+      "conformance_state": "valid_exact_object",
+      "finalDecision": "hold",
+      "blockingFailures": [],
+      "blockingUnknowns": [
+        "reported-verdict"
+      ],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    },
+    {
+      "id": "contribution-only-adverse-mutation",
+      "conformance_state": "valid_exact_object",
+      "finalDecision": "promote",
+      "blockingFailures": [],
+      "blockingUnknowns": [],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      },
+      "controlDecision": "promote",
+      "invariant": true
+    },
+    {
+      "id": "frozen-policy-explicit-overstated",
+      "conformance_state": "valid_exact_object",
+      "finalDecision": "reject",
+      "blockingFailures": [
+        "reported-verdict"
+      ],
+      "blockingUnknowns": [],
+      "sourceFieldsConsumed": [
+        "validation_receipt.valid",
+        "validation_receipt.authority.repository",
+        "validation_receipt.authority.main_sha",
+        "validation_receipt.authority.release_tag",
+        "validation_receipt.authority.release_commit",
+        "validation_receipt.authority.contract_c_version",
+        "validation_receipt.authority.validator_blob_sha",
+        "validation_receipt.object_sha256",
+        "validation_receipt.canonical_sha256",
+        "validation_receipt.result_set_id",
+        "execution.state",
+        "propositions[proposition_id].proposition.proposition_id",
+        "propositions[proposition_id].execution.state",
+        "propositions[proposition_id].execution.completion",
+        "propositions[proposition_id].conclusion.reported_verdict"
+      ],
+      "operator": {
+        "requiresHumanApproval": true,
+        "automaticApplicationPermitted": false,
+        "appliedAutomatically": false
+      }
+    }
+  ],
+  "operator_bar_mutations_rejected_before_evaluation": [
+    "requiresHumanApproval-false",
+    "automaticApplicationPermitted-true",
+    "appliedAutomatically-true",
+    "selectRankPermitted-true"
+  ],
+  "forbidden_semantic_reconstruction": {
+    "assessments_consumed": false,
+    "contributions_consumed": false,
+    "measurements_consumed": false,
+    "evidence_text_consumed": false,
+    "select_rank_used": false
+  }
+}

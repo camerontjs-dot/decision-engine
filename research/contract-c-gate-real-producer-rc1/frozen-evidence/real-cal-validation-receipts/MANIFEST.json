@@ -1,0 +1,60 @@
+{
+  "authority": {
+    "contract_c_version": "1.0.0",
+    "main_sha": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+    "release_commit": "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1",
+    "release_tag": "contract-c-v1.0.0",
+    "repository": "camerontjs-dot/apparatus-contracts",
+    "validator_blob_sha": "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+  },
+  "rows": [
+    {
+      "contract_b_index": "needs-source-credential.contract-b-index.json",
+      "object": "needs-source-credential.json",
+      "object_sha256": "650f88ae1eb36d7f0ebeacd77431a31e83baf71e808270a8e50a9f6dc43e9328",
+      "receipt": "needs-source-credential.receipt.json",
+      "result_set_id": "result-set:f0a07c9d270ad8af7a1e7297bb73b7a6bad5801f65de8d91a390d1fcd0c73a51",
+      "valid": true
+    },
+    {
+      "contract_b_index": "not-checkable-unclassified.contract-b-index.json",
+      "object": "not-checkable-unclassified.json",
+      "object_sha256": "93b87afcb0e162aef2ade030d348e87ae2d24eff58e7b64c70a9f7f75701046d",
+      "receipt": "not-checkable-unclassified.receipt.json",
+      "result_set_id": "result-set:6b956fce451a1024119cf4cd6627fc041c41cd38458f0ea9e858b515c9430b2d",
+      "valid": true
+    },
+    {
+      "contract_b_index": "overstated-joint-state.contract-b-index.json",
+      "object": "overstated-joint-state.json",
+      "object_sha256": "219e38b5c4c0e33e5906541171afeecc0ee1ec918d2583feb1e7637985d24c02",
+      "receipt": "overstated-joint-state.receipt.json",
+      "result_set_id": "result-set:13a30471e50a84d0f1e7e72913c3aee2ad0bf5e435b6b41fe51d313cba7ba006",
+      "valid": true
+    },
+    {
+      "contract_b_index": "production-minimal.contract-b-index.json",
+      "object": "production-minimal.json",
+      "object_sha256": "a6b03b66d77916b62a8cf668a4c683529a45370687a09c3d2adb64c2c2bb53cc",
+      "receipt": "production-minimal.receipt.json",
+      "result_set_id": "result-set:1c88860399aa28874e4d3caae3d9388e7461d1ce5102c251ecde32e22111549d",
+      "valid": true
+    },
+    {
+      "contract_b_index": "supported-tied-alternatives.contract-b-index.json",
+      "object": "supported-tied-alternatives.json",
+      "object_sha256": "fce16ea2b6e578f1af1830f114f7a04e60ed9df46f0f9f4cdaf3bf54b69f3263",
+      "receipt": "supported-tied-alternatives.receipt.json",
+      "result_set_id": "result-set:f29d4c35e96acc747939e68eac808998ff8d8c3480569d755ccc0ab5d670de75",
+      "valid": true
+    },
+    {
+      "contract_b_index": "unsupported-residual.contract-b-index.json",
+      "object": "unsupported-residual.json",
+      "object_sha256": "d116aa8d7be79a6006aa07cec7515bb0ea330aabbfa70b5af74a4d2021b5ad04",
+      "receipt": "unsupported-residual.receipt.json",
+      "result_set_id": "result-set:1846a42e5adcd47d7bcb7a0aa630e54ac9c789e5ba862abcb7a338e3b0cb18af",
+      "valid": true
+    }
+  ]
+}

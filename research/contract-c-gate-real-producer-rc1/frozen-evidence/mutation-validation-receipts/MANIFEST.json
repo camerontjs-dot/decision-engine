@@ -1,0 +1,92 @@
+{
+  "authority": {
+    "contract_c_version": "1.0.0",
+    "main_sha": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+    "release_commit": "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1",
+    "release_tag": "contract-c-v1.0.0",
+    "repository": "camerontjs-dot/apparatus-contracts",
+    "validator_blob_sha": "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+  },
+  "rows": [
+    {
+      "contract_b_index": null,
+      "object": "clear-positive.json",
+      "object_sha256": "0871ceaee1f3142b6846ec9978fd484f084603b5a6b52b4c47da6661601b4903",
+      "receipt": "clear-positive.receipt.json",
+      "result_set_id": "result-set:f43810958e091a2b9bbaaa04857b578cb1133336ec955ce2f22c0d62bbc617bf",
+      "valid": true
+    },
+    {
+      "contract_b_index": null,
+      "object": "explicit-adverse-assessment.json",
+      "object_sha256": "0bb82b2ad79f9e1d8beb778ecf87d42c526112d7b9d3faf7c5d3141b7eec2130",
+      "receipt": "explicit-adverse-assessment.receipt.json",
+      "result_set_id": "result-set:23601261623458027188051b54d9a60996f3ac344a04e0a24a62201aaa365328",
+      "valid": true
+    },
+    {
+      "contract_b_index": null,
+      "object": "explicit-overstated.json",
+      "object_sha256": "5d7265798cd6e315a864450ca7d9a9ea257e685bcb92fe703ce85aeab3371afc",
+      "receipt": "explicit-overstated.receipt.json",
+      "result_set_id": "result-set:f90b653f7a91d89a11d89288e2556727a40c809df1fb225220ccae4ef4702b8d",
+      "valid": true
+    },
+    {
+      "contract_b_index": null,
+      "object": "extra-field.json",
+      "object_sha256": "2eaea856e4d149d4e267f3c67b70af5a8db7a74f68b02ff7dbb99491132700d7",
+      "receipt": "extra-field.receipt.json",
+      "result_set_id": "result-set:554132c44cf1c8ac3802b8eca85aa66fff2e166ec765b804331d2b839300f3f2",
+      "valid": false
+    },
+    {
+      "contract_b_index": null,
+      "object": "future-reported-verdict.json",
+      "object_sha256": "355f8bcd932653ab76e8a77cd5d7290d7f1bf548f49d291830df8bbbf08ca448",
+      "receipt": "future-reported-verdict.receipt.json",
+      "result_set_id": "result-set:164630bb859595ca5b12da672d0881382a7564685824d108f6487bab4060e98a",
+      "valid": true
+    },
+    {
+      "contract_b_index": null,
+      "object": "malformed-assessment.json",
+      "object_sha256": "fdb83494f9a425544e4e52ed7c6f5d43623e0ac718119cfcfa3b63483bcebe71",
+      "receipt": "malformed-assessment.receipt.json",
+      "result_set_id": "result-set:4e393a4bcde26dc33da8cbba95936c5e19335b99669cd01b7722a24c23d6c9da",
+      "valid": false
+    },
+    {
+      "contract_b_index": null,
+      "object": "mismatched-result-set-id.json",
+      "object_sha256": "435ddebcd607284c61520ed7c023a9d2f75cb96a56a0b38c591a4a7fa1af7c88",
+      "receipt": "mismatched-result-set-id.receipt.json",
+      "result_set_id": "result-set:0000000000000000000000000000000000000000000000000000000000000000",
+      "valid": false
+    },
+    {
+      "contract_b_index": null,
+      "object": "mixed-support-refutation.json",
+      "object_sha256": "65d4287ec5a2b0239db4fe7ad81d462ebb543343f19d5e8d5a8222a2643aa024",
+      "receipt": "mixed-support-refutation.receipt.json",
+      "result_set_id": "result-set:f0ab5c1e701089006743bc33d8de198dad83753f7349095786bb4fd45974ec4f",
+      "valid": true
+    },
+    {
+      "contract_b_index": null,
+      "object": "schema-invalid-adverse.json",
+      "object_sha256": "9c52c994913b980889fd1781672a328d2144ce9fa311cc3df1b421a3c3275a1d",
+      "receipt": "schema-invalid-adverse.receipt.json",
+      "result_set_id": "result-set:9c5496b82b6c6e83a0c7a02e8e5fdfa84e4d5188dbfed73ab10bf58b23f5053a",
+      "valid": false
+    },
+    {
+      "contract_b_index": null,
+      "object": "wrong-contract-version.json",
+      "object_sha256": "8752504bde5d1a8380439d71172c130ba40f3300bbcc5c3765ccfaa0897983d5",
+      "receipt": "wrong-contract-version.receipt.json",
+      "result_set_id": "result-set:5d2c6e6ab673a40bfb9aab5c87e19f34f7b8355fd38e5175eed608da090f809b",
+      "valid": false
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "generator": "rc1-preregistered-mutation-corpus",
+  "rows": [
+    {
+      "name": "clear-positive",
+      "sha256": "0871ceaee1f3142b6846ec9978fd484f084603b5a6b52b4c47da6661601b4903",
+      "result_set_id": "result-set:f43810958e091a2b9bbaaa04857b578cb1133336ec955ce2f22c0d62bbc617bf",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "mixed-support-refutation",
+      "sha256": "65d4287ec5a2b0239db4fe7ad81d462ebb543343f19d5e8d5a8222a2643aa024",
+      "result_set_id": "result-set:f0ab5c1e701089006743bc33d8de198dad83753f7349095786bb4fd45974ec4f",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "explicit-adverse-assessment",
+      "sha256": "0bb82b2ad79f9e1d8beb778ecf87d42c526112d7b9d3faf7c5d3141b7eec2130",
+      "result_set_id": "result-set:23601261623458027188051b54d9a60996f3ac344a04e0a24a62201aaa365328",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "schema-invalid-adverse",
+      "sha256": "9c52c994913b980889fd1781672a328d2144ce9fa311cc3df1b421a3c3275a1d",
+      "result_set_id": "result-set:9c5496b82b6c6e83a0c7a02e8e5fdfa84e4d5188dbfed73ab10bf58b23f5053a",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "wrong-contract-version",
+      "sha256": "8752504bde5d1a8380439d71172c130ba40f3300bbcc5c3765ccfaa0897983d5",
+      "result_set_id": "result-set:5d2c6e6ab673a40bfb9aab5c87e19f34f7b8355fd38e5175eed608da090f809b",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "mismatched-result-set-id",
+      "sha256": "435ddebcd607284c61520ed7c023a9d2f75cb96a56a0b38c591a4a7fa1af7c88",
+      "result_set_id": "result-set:0000000000000000000000000000000000000000000000000000000000000000",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "future-reported-verdict",
+      "sha256": "355f8bcd932653ab76e8a77cd5d7290d7f1bf548f49d291830df8bbbf08ca448",
+      "result_set_id": "result-set:164630bb859595ca5b12da672d0881382a7564685824d108f6487bab4060e98a",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "malformed-assessment",
+      "sha256": "fdb83494f9a425544e4e52ed7c6f5d43623e0ac718119cfcfa3b63483bcebe71",
+      "result_set_id": "result-set:4e393a4bcde26dc33da8cbba95936c5e19335b99669cd01b7722a24c23d6c9da",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "extra-field",
+      "sha256": "2eaea856e4d149d4e267f3c67b70af5a8db7a74f68b02ff7dbb99491132700d7",
+      "result_set_id": "result-set:554132c44cf1c8ac3802b8eca85aa66fff2e166ec765b804331d2b839300f3f2",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    },
+    {
+      "name": "explicit-overstated",
+      "sha256": "5d7265798cd6e315a864450ca7d9a9ea257e685bcb92fe703ce85aeab3371afc",
+      "result_set_id": "result-set:f90b653f7a91d89a11d89288e2556727a40c809df1fb225220ccae4ef4702b8d",
+      "proposition_ids": [
+        "clm-md"
+      ]
+    }
+  ]
+}

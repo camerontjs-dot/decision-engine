@@ -1,0 +1,17 @@
+{
+  "authority": {
+    "contract_c_version": "1.0.0",
+    "main_sha": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+    "release_commit": "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1",
+    "release_tag": "contract-c-v1.0.0",
+    "repository": "camerontjs-dot/apparatus-contracts",
+    "validator_blob_sha": "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+  },
+  "canonical_sha256": "fce16ea2b6e578f1af1830f114f7a04e60ed9df46f0f9f4cdaf3bf54b69f3263",
+  "contract_b_index_sha256": "91ec867e20ee2d0ba68ee44985119e1d1ed6b0351a3068ff2c7f2138b06c462b",
+  "errors": [],
+  "object_sha256": "fce16ea2b6e578f1af1830f114f7a04e60ed9df46f0f9f4cdaf3bf54b69f3263",
+  "receipt_version": "contract-c-exact-byte-validation-receipt-rc1",
+  "result_set_id": "result-set:f29d4c35e96acc747939e68eac808998ff8d8c3480569d755ccc0ab5d670de75",
+  "valid": true
+}
