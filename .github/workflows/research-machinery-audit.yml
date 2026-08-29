@@ -1,0 +1,46 @@
+name: Research - Decision Engine machinery audit baseline
+
+on:
+  push:
+    branches:
+      - research/machinery-audit-20260829
+  pull_request:
+    paths:
+      - "research/machinery-audit/**"
+      - ".github/workflows/research-machinery-audit.yml"
+      - "src/**"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+jobs:
+  machinery-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Existing engine invariant sweep
+        run: node tests/engine.sweep.mjs
+      - name: Existing output-quality sweep
+        run: node tests/output-quality.sweep.mjs
+      - name: Existing combination-matrix sweep
+        run: node tests/combination-matrix.sweep.mjs
+      - name: Existing Gate tests
+        run: node --test tests/gateHead.test.mjs
+      - name: Existing Contract C seam fixture check
+        run: node research/contract-c-seam-shadow/validate-fixtures.mjs
+      - name: New machinery audit probes
+        run: |
+          mkdir -p artifacts/machinery-audit
+          node research/machinery-audit/machinery-audit.mjs             | tee artifacts/machinery-audit/decision-engine-machinery-audit.json
+          sha256sum artifacts/machinery-audit/decision-engine-machinery-audit.json             > artifacts/machinery-audit/decision-engine-machinery-audit.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: decision-engine-machinery-audit-${{ github.sha }}
+          path: artifacts/machinery-audit/
+          if-no-files-found: warn
+          retention-days: 30
