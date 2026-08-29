@@ -1,0 +1,23 @@
+{
+  "schema": "decision-engine/contract-c-gate-shadow-fixtures@0.1.0",
+  "synthetic": true,
+  "authority_fixture": {
+    "repository": "camerontjs-dot/apparatus-contracts",
+    "sha": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+    "path": "fixtures/contract-c/1.0.0/valid-canonical.json",
+    "canonical_sha256": "7a66583e332be4901d13ba9f2d7e12419938c77a41b83223a4b0946ad529b7a1"
+  },
+  "fixtures": [
+    {"id":"clear-positive","family":"A_clear_positive","expected_contract_c_conformance":true,"expected_strict_bar_decision":"promote","canonical_sha256":"0871ceaee1f3142b6846ec9978fd484f084603b5a6b52b4c47da6661601b4903"},
+    {"id":"explicit-adverse","family":"B_explicit_adverse","expected_contract_c_conformance":true,"expected_strict_bar_decision":"reject","canonical_sha256":"0bb82b2ad79f9e1d8beb778ecf87d42c526112d7b9d3faf7c5d3141b7eec2130"},
+    {"id":"epistemic-unknown","family":"C_epistemic_unknown","expected_contract_c_conformance":true,"expected_strict_bar_decision":"hold","canonical_sha256":"484551307ed8e350dba650957ea7acf129d9e0f7cd992549e0f2047a45765fd2"},
+    {"id":"evidence-insufficiency","family":"D_evidence_insufficiency","expected_contract_c_conformance":true,"expected_strict_bar_decision":"hold","canonical_sha256":"fc8c0cb79c25a0362be2f9cf81a66802d19ab0a1e772b26af2fac603730d5e4b"},
+    {"id":"execution-failure","family":"E_execution_failure","expected_contract_c_conformance":true,"expected_strict_bar_decision":"hold","canonical_sha256":"f957bc1227f759392e250f781492641ad2b6faf3ba2ce9f1956d87eef8c9183f"},
+    {"id":"missing-required-field","family":"F_missing_required_field","expected_contract_c_conformance":false,"expected_strict_bar_decision":"hold","canonical_sha256":"fdc52ca9e84cde11b189017504310b0afcb10e2e3916bfd285340acca1f99737"},
+    {"id":"malformed-field","family":"G_malformed_field","expected_contract_c_conformance":false,"expected_strict_bar_decision":"hold","canonical_sha256":"fdb83494f9a425544e4e52ed7c6f5d43623e0ac718119cfcfa3b63483bcebe71"},
+    {"id":"mixed-support-refutation","family":"H_mixed_support_refutation","expected_contract_c_conformance":true,"expected_strict_bar_decision":"promote","canonical_sha256":"65d4287ec5a2b0239db4fe7ad81d462ebb543343f19d5e8d5a8222a2643aa024"},
+    {"id":"extra-field","family":"metamorphic_extra_field","expected_contract_c_conformance":false,"expected_strict_bar_decision":"hold","canonical_sha256":"2eaea856e4d149d4e267f3c67b70af5a8db7a74f68b02ff7dbb99491132700d7"},
+    {"id":"contradicted","family":"policy_mutation_contradiction","expected_contract_c_conformance":true,"expected_strict_bar_decision":"reject","canonical_sha256":"601b733513ab623956aa6df6898dd1bee936b0484a2c5988157ca41a20847dc3"},
+    {"id":"irrelevant-producer-identity-mutation","family":"metamorphic_irrelevant_metadata","expected_contract_c_conformance":true,"expected_strict_bar_decision":"promote","canonical_sha256":"2d291dc031c2751dc92ad44256d4c12b9c4df8bf62401056277ad4e2123b82ad"}
+  ]
+}
