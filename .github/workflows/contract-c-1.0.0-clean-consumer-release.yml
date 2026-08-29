@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout Decision Engine harness only
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Checkout frozen public Contract C candidate
         uses: actions/checkout@v4
