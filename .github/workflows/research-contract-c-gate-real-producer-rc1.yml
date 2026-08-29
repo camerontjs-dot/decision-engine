@@ -1,0 +1,210 @@
+name: Research - Contract C Gate real-producer shadow RC1
+
+on:
+  push:
+    branches:
+      - research-infra/contract-c-gate-real-producer-shadow-rc1
+  pull_request:
+    paths:
+      - "research/contract-c-gate-real-producer-rc1/**"
+      - ".github/workflows/research-contract-c-gate-real-producer-rc1.yml"
+      - "research/contract-c-gate-shadow/**"
+      - "src/gate/**"
+      - "tests/gateHead.test.mjs"
+
+permissions:
+  contents: write
+
+jobs:
+  real-producer-shadow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Decision Engine research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out pinned current Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e
+          path: external/apparatus-contracts
+          fetch-depth: 0
+
+      - name: Check out pinned current CAL producer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: 53f0885b111676794d1bd20e10b91aa58b07e9d4
+          path: external/claim-audit-lab
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify exact frozen authorities and unchanged Gate baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git merge-base HEAD 9b5c1594927ae45f035d0f1fa4c5fff4935a6f46)" = "9b5c1594927ae45f035d0f1fa4c5fff4935a6f46"
+          git diff --exit-code cd5a471703e6682b7e8281bc954a135996cac58e -- \
+            src/gate/gateHead.js tests/gateHead.test.mjs src/decisionEngine.js
+
+          test "$(git -C external/apparatus-contracts rev-parse HEAD)" = \
+            "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e"
+          test "$(git -C external/apparatus-contracts hash-object validators/contract_c.py)" = \
+            "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+          test "$(git -C external/apparatus-contracts hash-object schema/contract-c/1.0.0/schema.json)" = \
+            "b0369de9b5c156322d6787261bbc7658a3b33781"
+          test "$(git -C external/apparatus-contracts rev-parse 'contract-c-v1.0.0^{commit}')" = \
+            "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+
+          test "$(git -C external/claim-audit-lab rev-parse HEAD)" = \
+            "53f0885b111676794d1bd20e10b91aa58b07e9d4"
+          test "$(git -C external/claim-audit-lab hash-object src/claim_audit_lab/contracts/contract_c.py)" = \
+            "d6b32a44ef11109fe0ee91efa212d3904badf58c"
+          test "$(git -C external/claim-audit-lab hash-object tests/test_contract_c_exporter.py)" = \
+            "bb7f128bdc089c1635a6f487a0c6861920ec5c9f"
+
+      - name: Install authoritative validator and current CAL test environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -e external/apparatus-contracts
+          cd external/claim-audit-lab
+          uv sync --extra dev
+
+      - name: Existing Gate baseline
+        run: node --test tests/gateHead.test.mjs
+
+      - name: RC0 adapter regression baseline
+        env:
+          CONTRACT_C_AUTHORITY_ROOT: external/apparatus-contracts
+        run: node --test research/contract-c-gate-shadow/tests/contractCGateShadowAdapter.test.mjs
+
+      - name: Generate preregistered mutation corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/contract-c-gate-real-producer-rc1
+          node research/contract-c-gate-real-producer-rc1/generateMutationCorpus.mjs \
+            artifacts/contract-c-gate-real-producer-rc1/mutations
+
+      - name: Validate mutations with authoritative Contract C validator
+        env:
+          CONTRACT_C_AUTHORITY_ROOT: external/apparatus-contracts
+        run: |
+          python research/contract-c-gate-real-producer-rc1/makeValidationReceipts.py \
+            artifacts/contract-c-gate-real-producer-rc1/mutations \
+            artifacts/contract-c-gate-real-producer-rc1/mutation-validation-receipts
+
+      - name: Preserve RC0 receipt-replay counterexample
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/contract-c-gate-real-producer-rc1/rc0ReceiptReplayCounterexample.mjs \
+            artifacts/contract-c-gate-real-producer-rc1/mutations \
+            artifacts/contract-c-gate-real-producer-rc1/mutation-validation-receipts \
+            research/contract-c-gate-shadow/bars.json \
+            | tee artifacts/contract-c-gate-real-producer-rc1/rc0-receipt-replay-counterexample.json
+
+      - name: Run hardened conformance-firewall adversarial audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/contract-c-gate-real-producer-rc1/runAdversarialAudit.mjs \
+            artifacts/contract-c-gate-real-producer-rc1/mutations \
+            artifacts/contract-c-gate-real-producer-rc1/mutation-validation-receipts \
+            research/contract-c-gate-real-producer-rc1/BAR.json \
+            | tee artifacts/contract-c-gate-real-producer-rc1/adversarial-audit.json
+
+      - name: Emit bounded corpus from unmodified current CAL exporter pathways
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/contract-c-gate-real-producer-rc1/real-cal-corpus
+          cd external/claim-audit-lab
+          uv run python "$GITHUB_WORKSPACE/research/contract-c-gate-real-producer-rc1/collectRealCalCorpus.py" \
+            "$GITHUB_WORKSPACE/external/claim-audit-lab" \
+            "$GITHUB_WORKSPACE/artifacts/contract-c-gate-real-producer-rc1/real-cal-corpus"
+
+      - name: Independently validate every real CAL-produced object and Contract-B binding
+        env:
+          CONTRACT_C_AUTHORITY_ROOT: external/apparatus-contracts
+        run: |
+          python research/contract-c-gate-real-producer-rc1/makeValidationReceipts.py \
+            artifacts/contract-c-gate-real-producer-rc1/real-cal-corpus \
+            artifacts/contract-c-gate-real-producer-rc1/real-cal-validation-receipts \
+            --index-dir artifacts/contract-c-gate-real-producer-rc1/real-cal-corpus
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt_dir = Path("artifacts/contract-c-gate-real-producer-rc1/real-cal-validation-receipts")
+          manifest = json.loads((receipt_dir / "MANIFEST.json").read_text())
+          failed = [row for row in manifest["rows"] if not row["valid"]]
+          if failed:
+              raise SystemExit(f"real CAL-produced Contract C validation failures: {failed}")
+          PY
+
+      - name: Run frozen real-producer Gate shadow and RC0 reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/contract-c-gate-real-producer-rc1/runRealProducerShadow.mjs \
+            artifacts/contract-c-gate-real-producer-rc1/real-cal-corpus \
+            artifacts/contract-c-gate-real-producer-rc1/real-cal-validation-receipts \
+            research/contract-c-gate-real-producer-rc1/BAR.json \
+            research/contract-c-gate-shadow/bars.json \
+            | tee artifacts/contract-c-gate-real-producer-rc1/real-producer-shadow.json
+
+      - name: Hash complete evidence surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          find artifacts/contract-c-gate-real-producer-rc1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > artifacts/contract-c-gate-real-producer-rc1/SHA256SUMS
+
+      - name: Freeze first successful evidence capture or verify frozen bytes
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="artifacts/contract-c-gate-real-producer-rc1"
+          dst="research/contract-c-gate-real-producer-rc1/frozen-evidence"
+          if [ ! -f "$dst/CAPTURED.json" ]; then
+            mkdir -p "$dst"
+            cp -R "$src"/. "$dst"/
+            cat > "$dst/CAPTURED.json" <<JSON
+          {
+            "source_commit": "${GITHUB_SHA}",
+            "workflow": "research-contract-c-gate-real-producer-rc1.yml",
+            "status": "frozen_after_successful_assertion_run"
+          }
+          JSON
+            diff -qr --exclude=CAPTURED.json "$src" "$dst"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add "$dst"
+            git commit -m "research-infra: freeze RC1 real-producer evidence"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          else
+            diff -qr --exclude=CAPTURED.json "$src" "$dst"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-c-gate-real-producer-rc1-${{ github.sha }}
+          path: artifacts/contract-c-gate-real-producer-rc1/
+          if-no-files-found: warn
+          retention-days: 90
