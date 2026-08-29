@@ -178,6 +178,10 @@ export function buildSyntheticFixture(id) {
       object = resultSet();
       object.extension_probe = true;
       break;
+    case "invalid-adverse":
+      object = resultSet(proposition("contradicted"));
+      object.extension_probe = true;
+      break;
     case "contradicted":
       object = resultSet(proposition("contradicted"));
       break;
