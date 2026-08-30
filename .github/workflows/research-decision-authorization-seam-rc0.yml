@@ -1,0 +1,39 @@
+name: Research - Decision Authorization Seam RC0
+
+on:
+  push:
+    branches:
+      - research/decision-authorization-seam-rc0
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "research/decision-authorization-seam-rc0/**"
+      - ".github/workflows/research-decision-authorization-seam-rc0.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  seam-rc0:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconfirm production Gate baseline
+        run: node --test tests/gateHead.test.mjs
+
+      - name: Execute preregistered decision-authorization seam cases
+        run: node research/decision-authorization-seam-rc0/run-rc0.mjs
+
+      - name: Confirm research harness cannot mutate MainFrame
+        run: |
+          if grep -R -n -E "(writeFile|appendFile|rmSync|unlinkSync|fetch\(|https?://|child_process)" research/decision-authorization-seam-rc0/*.mjs; then
+            echo "unexpected mutation/network primitive in RC0 harness"
+            exit 1
+          fi
+          echo "research harness contains no file-write, process-exec, or network primitive"
