@@ -1,0 +1,10 @@
+{
+  "schema": "de-contract-e-native-rc2-receipt",
+  "authority": "research_only",
+  "head": "e4d96071e2870d3edbb87140f23824e1d4dee580",
+  "push_run": 33321116949,
+  "pr_run": 33321119161,
+  "artifact": 9734907411,
+  "artifact_digest": "sha256:7f19102f8a4f07670240a6c1ee03c7940fd1ccf678957be02065990697a6a3ca",
+  "result": "SUPPORTED"
+}
