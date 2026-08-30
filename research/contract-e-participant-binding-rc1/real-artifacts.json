@@ -1,0 +1,179 @@
+{
+  "fixture_version": "contract-e-participant-binding-rc1.0",
+  "evaluation_time": "2026-08-30T16:00:00Z",
+  "source_refs": {
+    "contract_b_manifest": {
+      "repo": "camerontjs-dot/claim-audit-lab",
+      "ref": "53f0885b111676794d1bd20e10b91aa58b07e9d4",
+      "path": "tests/fixtures/cb/evidence-bundle-minimal/bundle_manifest.yaml",
+      "blob_sha": "87b4b19a94e977d2aaf9fdb3ee1612ee253ace8e"
+    },
+    "contract_b_claim": {
+      "repo": "camerontjs-dot/claim-audit-lab",
+      "ref": "53f0885b111676794d1bd20e10b91aa58b07e9d4",
+      "path": "tests/fixtures/cb/evidence-bundle-minimal/claims/clm-001.yaml",
+      "blob_sha": "988a59d12a5dbf05081fed94dcc50f409b2686db"
+    },
+    "contract_b_passage": {
+      "repo": "camerontjs-dot/claim-audit-lab",
+      "ref": "53f0885b111676794d1bd20e10b91aa58b07e9d4",
+      "path": "tests/fixtures/cb/evidence-bundle-minimal/evidence/src-001/passages/pass-001.yaml",
+      "blob_sha": "5b371ad53c218db84d2a116f23be69cb5484b331"
+    },
+    "contract_c": {
+      "repo": "camerontjs-dot/apparatus-contracts",
+      "ref": "00bdf9546a877f9f6c1d7fd227fd959e1d7aa99e",
+      "path": "fixtures/contract-c/1.0.0/valid-canonical.json",
+      "blob_sha": "38b2271fc31ffa7683c09a486a8919572fc2f1a4"
+    },
+    "citation_decision": {
+      "repo": "camerontjs-dot/decision-engine",
+      "ref": "research/decision-authorization-cross-usecase-rc1",
+      "path": "research/decision-authorization-cross-usecase-rc1/fixtures/citation.json",
+      "blob_sha": "656e942bfe015a1672f0806852e5fd1886d25859"
+    },
+    "task_decision": {
+      "repo": "camerontjs-dot/decision-engine",
+      "ref": "research/decision-authorization-cross-usecase-rc1",
+      "path": "research/decision-authorization-cross-usecase-rc1/fixtures/task-dispatch.json",
+      "blob_sha": "cc3534990267499c1c38334a320b6730e38d1f7b"
+    }
+  },
+  "source_access_receipt": {
+    "receipt_id": "source-access:fixture-001",
+    "grantor": "operator-root",
+    "grantee": "evidence-bundler",
+    "source_url": "https://example.test/synthetic-regulatory-guidance",
+    "source_content_hash": "sha256:ee9cd6276a1a8a3338175c62b37d27fdb5ed2cb20448c4453da8e69938d5f9f0",
+    "operations": ["source.read", "evidence.admit_passage"],
+    "valid_from": "2026-08-30T00:00:00Z",
+    "valid_until": "2026-12-31T23:59:59Z",
+    "revoked": false,
+    "note": "Research-only authority sidecar. Its existence does not assert source relevance, reliability, support, or truth."
+  },
+  "contract_b": {
+    "manifest": {
+      "bundle_id": "41973898-948c-58b4-8982-61d62ec81500",
+      "schema_version": "1.0.0",
+      "source_run_id": "550e8400-e29b-41d4-a716-446655440000",
+      "source_corpus_hash": "sha256:50b1fbfcb89cb75b9e2588dace35394531be5dc62a222043130ccbc3d6fde263",
+      "bundle_hash": "sha256:e0419a18573a325da2f53ec028328210a8b18598ea5a166864ad8bf3b8b555fb",
+      "evidence_builder_version": "0.1.0",
+      "evidence_builder_operator": "cameron",
+      "reviewer_sign_off": {
+        "required": false,
+        "signed_by": null
+      }
+    },
+    "claim": {
+      "claim_id": "clm-001",
+      "bundle_id": "41973898-948c-58b4-8982-61d62ec81500",
+      "claim_text": "Accelerated approval applications should include 30-day accelerated stability data in the submission package.",
+      "claim_type": "extracted_claim",
+      "scaffold_support_status": "sourced",
+      "scaffold_claim_strength": 0.86,
+      "scaffold_extraction_fidelity": 0.92,
+      "evidence_passages": [
+        {
+          "passage_id": "pass-001",
+          "source_id": "src-001",
+          "source_trust_level": "primary",
+          "passage_hash": "sha256:60d369c3c3befaef9a16bbf1f642ce3f5200256816f09fd91bdd277b1d5b8f55"
+        }
+      ]
+    },
+    "passage": {
+      "passage_id": "pass-001",
+      "source_id": "src-001",
+      "bundle_id": "41973898-948c-58b4-8982-61d62ec81500",
+      "passage_hash": "sha256:60d369c3c3befaef9a16bbf1f642ce3f5200256816f09fd91bdd277b1d5b8f55",
+      "extraction_method": "scaffold_cited",
+      "passage_text": "For accelerated approval applications, sponsors should include 30-day accelerated stability data in the submission package.",
+      "provenance": {
+        "source_url": "https://example.test/synthetic-regulatory-guidance",
+        "source_content_hash": "sha256:ee9cd6276a1a8a3338175c62b37d27fdb5ed2cb20448c4453da8e69938d5f9f0",
+        "scaffold_run_id": "550e8400-e29b-41d4-a716-446655440000",
+        "evidence_builder_version": "0.1.0"
+      }
+    }
+  },
+  "contract_c": {
+    "contract_c_version": "1.0.0",
+    "result_set_id": "result-set:44acdb85b76560b087aabeae576fb500a39ce506d3824570299637a2b16c3843",
+    "input": {
+      "contract_b": {
+        "contract_version": "1.2.0",
+        "bundle_id": "85f8f6dc-f46f-5efa-b7e7-6e049da84591",
+        "bundle_hash": "sha256:a40fe687c19944248fe77d044801dca02bba56259198b297b897f6a5a304f2fa"
+      }
+    },
+    "producer": {
+      "semantic_implementation_sha": "33a928db97316a3652d57df9cafb8ca240305233",
+      "policy_sha256": "88f007c96f3acf63a191556fe7fa46b80b37e9fcb5224ec1e90fb626a061104d"
+    },
+    "first_proposition": {
+      "proposition_id": "clm-md",
+      "text_sha256": "f3def40d37574fefac4394afc24840423ec1cfa3545870ea05c1da7446d53fab",
+      "first_evidence_ref": {
+        "source_id": "src-md",
+        "passage_id": "auto-src-md-947b3344e6db",
+        "passage_sha256": "sha256:7d8968f45e479f53674ab916aca5d6653e81a13555b53d88ec3e681d2767e40d"
+      },
+      "semantic": {
+        "reported_verdict": "partially_supported",
+        "terminal_branch": "support_between_thresholds",
+        "measurement_kind": "cal_v0_2_aggregate_support_signal",
+        "measurement_value": 0.6075,
+        "causal_form": "single_necessary"
+      }
+    }
+  },
+  "citation_decision": {
+    "decision_envelope_version": "rc1/0",
+    "input": {
+      "authority_kind": "mindgraph_citation_assessment",
+      "authority_id": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    "policy": {"id": "mainframe-citation-use-shadow", "version": "0.0.0-rc1"},
+    "target": {
+      "kind": "mindgraph_retrieval_result",
+      "object_id": "mindgraph:result:citable-001",
+      "content_sha256": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "decision": {
+      "disposition": "eligible",
+      "effect": "cite_as_evidence",
+      "reason_codes": ["citation_class_citable"]
+    }
+  },
+  "task_decision": {
+    "decision_envelope_version": "rc1/0",
+    "input": {
+      "authority_kind": "reviewed_task_authority",
+      "authority_id": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    "policy": {"id": "mainframe-task-dispatch-eligibility-shadow", "version": "0.0.0-rc1"},
+    "target": {
+      "kind": "mainframe_task",
+      "object_id": "hyper-realism-archive-readme-state",
+      "content_sha256": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "decision": {
+      "disposition": "eligible",
+      "effect": "dispatch_task",
+      "reason_codes": ["reviewed_ready_and_graduated"]
+    }
+  },
+  "execution_record": {
+    "execution_id": "execution:task-dispatch-fixture-001",
+    "executor_actor": "task-agent",
+    "operation": "task.dispatch",
+    "target": {
+      "class": "mainframe_task",
+      "id": "hyper-realism-archive-readme-state",
+      "current_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "executor_report": "SUCCESS",
+    "observed_post_state": "APPLIED"
+  }
+}
