@@ -38,6 +38,9 @@ function decisionExpected(declaration, artifacts, declarations) {
   const targetKind = getPath(artifacts, declaration.target_kind_binding);
   const targetId = getPath(artifacts, declaration.target_id_binding);
   const targetHash = getPath(artifacts, declaration.target_hash_binding);
+  if (!Array.isArray(declaration.accepted_effects) || !declaration.accepted_effects.includes(effect)) {
+    return result(false, "participant_effect_out_of_scope");
+  }
   const mapping = declarations.effect_operation_map[effect];
   if (!mapping) return result(false, "effect_unmapped");
   if (targetKind !== mapping.target_kind) return result(false, "effect_target_kind_mismatch");
@@ -100,6 +103,9 @@ export function validateDeclarationSet(declarations) {
     const excluded = new Set(declaration.excludes || []);
     for (const item of owned) {
       if (excluded.has(item)) failures.push(`${name}:ownership_exclusion_overlap:${item}`);
+    }
+    if (declaration.effect_binding && (!Array.isArray(declaration.accepted_effects) || declaration.accepted_effects.length === 0)) {
+      failures.push(`${name}:effect_domain_missing`);
     }
     const bindingPaths = JSON.stringify(declaration.binding || {}) + JSON.stringify({
       effect_binding: declaration.effect_binding,
