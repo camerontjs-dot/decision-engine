@@ -1,0 +1,28 @@
+{
+  "profile_version": "contract-e-participant-binding-rc1.0",
+  "operation_registry": {
+    "source.read": {"target_classes": ["source_material"]},
+    "evidence.admit_passage": {"target_classes": ["evidence_passage"]},
+    "assessment.issue": {"target_classes": ["contract_b_claim"]},
+    "decision.make": {"target_classes": ["contract_c_result"]},
+    "citation.use": {"target_classes": ["mindgraph_retrieval_result"]},
+    "task.dispatch": {"target_classes": ["mainframe_task"]},
+    "outcome.verify": {"target_classes": ["execution_target"]}
+  },
+  "profile": {
+    "id": "authority.contract-e-rc1.delegated-pipeline",
+    "valid_from": "2026-08-30T00:00:00Z",
+    "valid_until": "2026-12-31T23:59:59Z",
+    "revoked": false,
+    "grants": [
+      {"actor": "evidence-bundler", "operation": "source.read", "target_classes": ["source_material"], "max_batch": 1, "requires_independent_verifier": false},
+      {"actor": "evidence-bundler", "operation": "evidence.admit_passage", "target_classes": ["evidence_passage"], "max_batch": 100, "requires_independent_verifier": false},
+      {"actor": "claim-audit-lab", "operation": "assessment.issue", "target_classes": ["contract_b_claim"], "max_batch": 100, "requires_independent_verifier": false},
+      {"actor": "decision-engine-policy", "operation": "decision.make", "target_classes": ["contract_c_result"], "max_batch": 100, "requires_independent_verifier": false},
+      {"actor": "citation-agent", "operation": "citation.use", "target_classes": ["mindgraph_retrieval_result"], "max_batch": 100, "requires_independent_verifier": false},
+      {"actor": "task-agent", "operation": "task.dispatch", "target_classes": ["mainframe_task"], "max_batch": 10, "requires_independent_verifier": false},
+      {"actor": "verifier-agent", "operation": "outcome.verify", "target_classes": ["execution_target"], "max_batch": 100, "requires_independent_verifier": true}
+    ],
+    "escalations": []
+  }
+}
