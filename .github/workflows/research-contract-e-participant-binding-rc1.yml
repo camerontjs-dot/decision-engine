@@ -1,0 +1,46 @@
+name: Research Contract E Participant Binding RC1
+
+on:
+  push:
+    branches:
+      - research/contract-e-participant-binding-rc1
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'research/contract-e-participant-binding-rc1/**'
+      - '.github/workflows/research-contract-e-participant-binding-rc1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  participant-binding-rc1:
+    name: Contract E Participant Binding RC1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run frozen participant-binding experiment
+        run: node research/contract-e-participant-binding-rc1/run-rc1.mjs
+
+      - name: Show run summary
+        if: always()
+        run: |
+          if [ -f research/contract-e-participant-binding-rc1/HOSTED-RUN.json ]; then
+            cat research/contract-e-participant-binding-rc1/HOSTED-RUN.json
+          fi
+
+      - name: Upload run summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-e-participant-binding-rc1
+          path: research/contract-e-participant-binding-rc1/HOSTED-RUN.json
+          if-no-files-found: warn
