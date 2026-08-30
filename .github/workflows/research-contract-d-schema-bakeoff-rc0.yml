@@ -1,0 +1,21 @@
+name: Research - Contract D Schema Bake-off RC0
+
+on:
+  push:
+    branches:
+      - research/contract-d-schema-bakeoff-rc0
+  pull_request:
+    paths:
+      - "research/contract-d-schema-bakeoff-rc0/**"
+      - ".github/workflows/research-contract-d-schema-bakeoff-rc0.yml"
+
+jobs:
+  bakeoff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run frozen bake-off
+        run: node research/contract-d-schema-bakeoff-rc0/run.mjs
