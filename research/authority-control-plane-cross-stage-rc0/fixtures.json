@@ -1,0 +1,112 @@
+{
+  "fixture_version": "authority-cross-stage-rc0.1",
+  "evaluation_time": "2026-08-30T15:00:00Z",
+  "operation_registry": {
+    "assessment.issue": {"target_classes": ["research_claim"]},
+    "decision.make": {"target_classes": ["research_decision"]},
+    "repository.write.docs": {"target_classes": ["research_repo", "protected_repo"]},
+    "repository.write.runtime": {"target_classes": ["research_repo", "protected_repo"]},
+    "outcome.verify": {"target_classes": ["research_repo", "protected_repo"]}
+  },
+  "profiles": {
+    "manual": {
+      "id": "authority.manual.v0",
+      "valid_from": "2026-08-30T00:00:00Z",
+      "valid_until": "2026-12-31T23:59:59Z",
+      "revoked": false,
+      "grants": [
+        {
+          "actor": "evaluator-agent",
+          "operation": "assessment.issue",
+          "target_classes": ["research_claim"],
+          "max_batch": 1,
+          "requires_independent_verifier": false
+        }
+      ],
+      "escalations": [
+        {"actor": "decision-engine-policy", "operation": "decision.make", "target_classes": ["research_decision"], "max_batch": 1},
+        {"actor": "research-agent", "operation": "repository.write.docs", "target_classes": ["research_repo"], "max_batch": 100},
+        {"actor": "research-agent", "operation": "repository.write.runtime", "target_classes": ["research_repo"], "max_batch": 100},
+        {"actor": "verifier-agent", "operation": "outcome.verify", "target_classes": ["research_repo"], "max_batch": 100}
+      ]
+    },
+    "supervised": {
+      "id": "authority.supervised.v0",
+      "valid_from": "2026-08-30T00:00:00Z",
+      "valid_until": "2026-12-31T23:59:59Z",
+      "revoked": false,
+      "grants": [
+        {"actor": "evaluator-agent", "operation": "assessment.issue", "target_classes": ["research_claim"], "max_batch": 1, "requires_independent_verifier": false},
+        {"actor": "decision-engine-policy", "operation": "decision.make", "target_classes": ["research_decision"], "max_batch": 1, "requires_independent_verifier": false},
+        {"actor": "research-agent", "operation": "repository.write.docs", "target_classes": ["research_repo"], "max_batch": 1, "requires_independent_verifier": false},
+        {"actor": "verifier-agent", "operation": "outcome.verify", "target_classes": ["research_repo"], "max_batch": 100, "requires_independent_verifier": true}
+      ],
+      "escalations": [
+        {"actor": "research-agent", "operation": "repository.write.docs", "target_classes": ["research_repo"], "max_batch": 100},
+        {"actor": "research-agent", "operation": "repository.write.runtime", "target_classes": ["research_repo"], "max_batch": 100}
+      ]
+    },
+    "delegated-research": {
+      "id": "authority.delegated-research.v0",
+      "valid_from": "2026-08-30T00:00:00Z",
+      "valid_until": "2026-12-31T23:59:59Z",
+      "revoked": false,
+      "grants": [
+        {"actor": "evaluator-agent", "operation": "assessment.issue", "target_classes": ["research_claim"], "max_batch": 1, "requires_independent_verifier": false},
+        {"actor": "decision-engine-policy", "operation": "decision.make", "target_classes": ["research_decision"], "max_batch": 1, "requires_independent_verifier": false},
+        {"actor": "research-agent", "operation": "repository.write.docs", "target_classes": ["research_repo"], "max_batch": 5, "requires_independent_verifier": false},
+        {"actor": "verifier-agent", "operation": "outcome.verify", "target_classes": ["research_repo"], "max_batch": 100, "requires_independent_verifier": true}
+      ],
+      "escalations": [
+        {"actor": "research-agent", "operation": "repository.write.docs", "target_classes": ["research_repo"], "max_batch": 100},
+        {"actor": "research-agent", "operation": "repository.write.runtime", "target_classes": ["research_repo"], "max_batch": 100}
+      ]
+    }
+  },
+  "workflow": [
+    {"id": "assessment", "actor": "evaluator-agent", "operation": "assessment.issue", "target": {"class": "research_claim", "id": "claim-1"}, "batch_size": 1, "semantic_payload": {"opaque": "assessment-semantic-a"}},
+    {"id": "decision", "actor": "decision-engine-policy", "operation": "decision.make", "target": {"class": "research_decision", "id": "decision-1"}, "batch_size": 1, "semantic_payload": {"opaque": "decision-semantic-a"}},
+    {"id": "docs-single", "actor": "research-agent", "operation": "repository.write.docs", "target": {"class": "research_repo", "id": "repo-research"}, "batch_size": 1, "semantic_payload": {"opaque": "docs-semantic-a"}},
+    {"id": "docs-batch", "actor": "research-agent", "operation": "repository.write.docs", "target": {"class": "research_repo", "id": "repo-research"}, "batch_size": 3, "semantic_payload": {"opaque": "docs-semantic-b"}},
+    {"id": "runtime", "actor": "research-agent", "operation": "repository.write.runtime", "target": {"class": "research_repo", "id": "repo-research"}, "batch_size": 1, "semantic_payload": {"opaque": "runtime-semantic-a"}},
+    {"id": "verify", "actor": "verifier-agent", "operation": "outcome.verify", "target": {"class": "research_repo", "id": "repo-research"}, "batch_size": 1, "context": {"executor_actor": "research-agent"}, "semantic_payload": {"opaque": "verification-semantic-a"}},
+    {"id": "protected-docs", "actor": "research-agent", "operation": "repository.write.docs", "target": {"class": "protected_repo", "id": "repo-protected"}, "batch_size": 1, "semantic_payload": {"opaque": "protected-semantic-a"}}
+  ],
+  "expected_profile_results": {
+    "manual": {
+      "assessment": "IN_JURISDICTION",
+      "decision": "REQUIRES_HIGHER_AUTHORITY",
+      "docs-single": "REQUIRES_HIGHER_AUTHORITY",
+      "docs-batch": "REQUIRES_HIGHER_AUTHORITY",
+      "runtime": "REQUIRES_HIGHER_AUTHORITY",
+      "verify": "REQUIRES_HIGHER_AUTHORITY",
+      "protected-docs": "OUT_OF_JURISDICTION"
+    },
+    "supervised": {
+      "assessment": "IN_JURISDICTION",
+      "decision": "IN_JURISDICTION",
+      "docs-single": "IN_JURISDICTION",
+      "docs-batch": "REQUIRES_HIGHER_AUTHORITY",
+      "runtime": "REQUIRES_HIGHER_AUTHORITY",
+      "verify": "IN_JURISDICTION",
+      "protected-docs": "OUT_OF_JURISDICTION"
+    },
+    "delegated-research": {
+      "assessment": "IN_JURISDICTION",
+      "decision": "IN_JURISDICTION",
+      "docs-single": "IN_JURISDICTION",
+      "docs-batch": "IN_JURISDICTION",
+      "runtime": "REQUIRES_HIGHER_AUTHORITY",
+      "verify": "IN_JURISDICTION",
+      "protected-docs": "OUT_OF_JURISDICTION"
+    }
+  },
+  "protected_cases": ["runtime", "protected-docs"],
+  "outcome_cases": [
+    {"id": "authorized-success", "authorization": "IN_JURISDICTION", "executor_report": "SUCCESS", "observed_post_state": "APPLIED", "expected": "VERIFIED_APPLIED"},
+    {"id": "authorized-failure", "authorization": "IN_JURISDICTION", "executor_report": "FAILURE", "observed_post_state": "NOT_APPLIED", "expected": "VERIFIED_NOT_APPLIED"},
+    {"id": "authorized-partial", "authorization": "IN_JURISDICTION", "executor_report": "SUCCESS", "observed_post_state": "PARTIAL", "expected": "VERIFIED_PARTIAL"},
+    {"id": "report-contradiction", "authorization": "IN_JURISDICTION", "executor_report": "SUCCESS", "observed_post_state": "NOT_APPLIED", "expected": "VERIFIED_NOT_APPLIED"},
+    {"id": "unknown-post-state", "authorization": "IN_JURISDICTION", "executor_report": "SUCCESS", "observed_post_state": "UNKNOWN", "expected": "VERIFIED_UNKNOWN"}
+  ]
+}
