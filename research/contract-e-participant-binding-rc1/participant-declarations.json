@@ -1,5 +1,5 @@
 {
-  "declaration_version": "contract-e-participant-binding-rc1.0",
+  "declaration_version": "contract-e-participant-binding-rc1.1",
   "effect_operation_map": {
     "cite_as_evidence": {
       "operation": "citation.use",
@@ -74,8 +74,9 @@
     "citation-use": {
       "participant": "citation-agent",
       "owns": ["citation_use_request"],
-      "excludes": ["epistemic_support", "decision_policy_correctness"],
+      "excludes": ["epistemic_support", "decision_policy_correctness", "task_dispatch_execution"],
       "actor": "citation-agent",
+      "accepted_effects": ["cite_as_evidence"],
       "effect_binding": "citation_decision.decision.effect",
       "target_kind_binding": "citation_decision.target.kind",
       "target_id_binding": "citation_decision.target.object_id",
@@ -85,8 +86,9 @@
     "task-execution": {
       "participant": "task-agent",
       "owns": ["task_dispatch_execution"],
-      "excludes": ["decision_policy_correctness", "outcome_verification"],
+      "excludes": ["decision_policy_correctness", "outcome_verification", "citation_use_request"],
       "actor": "task-agent",
+      "accepted_effects": ["dispatch_task"],
       "effect_binding": "task_decision.decision.effect",
       "target_kind_binding": "task_decision.target.kind",
       "target_id_binding": "task_decision.target.object_id",
