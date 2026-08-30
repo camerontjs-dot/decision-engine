@@ -1,6 +1,6 @@
 # EDR — Decision / Authorization Boundary
 
-Status: promotion candidate
+Status: promoted
 
 ## Decision
 
