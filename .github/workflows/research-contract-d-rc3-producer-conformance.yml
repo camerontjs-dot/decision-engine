@@ -30,6 +30,34 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Confirm frozen RC2 native representation is not RC3
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          candidate = Path("apparatus-contracts/research/contract-d-independent-authority-rc3/candidate")
+          sys.path.insert(0, str(candidate))
+          from contract_d_consume import ApplicabilityExpectation, consume
+          rc2_core = {
+              "contract_version": "D-rc2",
+              "input_authority": {"kind": "contract-c", "id": "c1"},
+              "policy": {"id": "source-audit", "version": "1"},
+              "target": {"kind": "knowledge", "id": "k1", "content_hash": "h1"},
+              "evaluation_state": "completed",
+              "disposition": "clear",
+              "effect": {"type": "knowledge.add_verified_tag", "version": "1", "params": {"scope": "claim"}},
+          }
+          expectation = ApplicabilityExpectation(
+              {"kind":"contract-c","id":"c1","immutable_id":"missing-in-rc2"},
+              {"id":"source-audit","version":"1"},
+              {"kind":"knowledge","id":"k1","content_sha256":"sha256:" + "1"*64},
+              "knowledge.add_verified_tag",
+              {"scope":"claim"},
+          )
+          result = consume(rc2_core, expectation)
+          assert result["outcome"] == "cannot_establish", result
+          print("frozen-rc2-native", result)
+          PY
       - name: Emit native Contract D RC3 objects
         run: node decision-engine/research/contract-d-rc3-producer-conformance/emit.mjs > /tmp/contract-d-rc3.json
       - name: Validate and consume with frozen apparatus candidate
