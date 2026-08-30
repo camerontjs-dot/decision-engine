@@ -1,0 +1,39 @@
+name: Research - Decision Authorization Cross-Use-Case RC1
+
+on:
+  push:
+    branches:
+      - research/decision-authorization-cross-usecase-rc1
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "research/decision-authorization-cross-usecase-rc1/**"
+      - ".github/workflows/research-decision-authorization-cross-usecase-rc1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  cross-usecase-rc1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Reconfirm production Gate baseline
+        run: node --test tests/gateHead.test.mjs
+
+      - name: Execute preregistered cross-use-case seam matrix
+        run: node research/decision-authorization-cross-usecase-rc1/run-rc1.mjs
+
+      - name: Confirm research harness has no external mutation primitives
+        run: |
+          if grep -R -n -E "(writeFile|appendFile|rmSync|unlinkSync|child_process|fetch\(|https?://)" research/decision-authorization-cross-usecase-rc1/*.mjs; then
+            echo "unexpected external mutation/network primitive in RC1 harness"
+            exit 1
+          fi
+          echo "RC1 harness contains no file-write, process-exec, or network primitive"
