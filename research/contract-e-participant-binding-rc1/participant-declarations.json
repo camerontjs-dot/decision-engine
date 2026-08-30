@@ -1,0 +1,111 @@
+{
+  "declaration_version": "contract-e-participant-binding-rc1.0",
+  "effect_operation_map": {
+    "cite_as_evidence": {
+      "operation": "citation.use",
+      "target_kind": "mindgraph_retrieval_result",
+      "target_class": "mindgraph_retrieval_result"
+    },
+    "dispatch_task": {
+      "operation": "task.dispatch",
+      "target_kind": "mainframe_task",
+      "target_class": "mainframe_task"
+    }
+  },
+  "participants": {
+    "source-access": {
+      "participant": "evidence-bundler",
+      "owns": ["source_access_execution"],
+      "excludes": ["source_relevance", "source_reliability_truth", "claim_support"],
+      "actor": "evidence-bundler",
+      "operation": "source.read",
+      "target_class": "source_material",
+      "binding": {
+        "target_id": ["source_access_receipt.source_url"],
+        "target_hash": ["source_access_receipt.source_content_hash"],
+        "receipt_source_id": ["source_access_receipt.receipt_id"]
+      },
+      "forbidden_semantic_inputs": ["contract_b.claim.scaffold_support_status", "contract_b.claim.scaffold_claim_strength", "contract_b.claim.evidence_passages.0.source_trust_level", "contract_b.passage.passage_text"]
+    },
+    "evidence-admission": {
+      "participant": "evidence-bundler",
+      "owns": ["passage_admission", "bundle_seal"],
+      "excludes": ["passage_support", "passage_contradiction", "cal_verdict"],
+      "actor": "evidence-bundler",
+      "operation": "evidence.admit_passage",
+      "target_class": "evidence_passage",
+      "binding": {
+        "target_id": ["contract_b.passage.bundle_id", "contract_b.passage.source_id", "contract_b.passage.passage_id"],
+        "target_hash": ["contract_b.passage.passage_hash"],
+        "source_identity": ["contract_b.passage.provenance.source_url", "contract_b.passage.provenance.source_content_hash"],
+        "access_receipt": ["source_access_receipt.receipt_id"]
+      },
+      "forbidden_semantic_inputs": ["contract_b.claim.scaffold_support_status", "contract_b.claim.scaffold_claim_strength", "contract_b.claim.evidence_passages.0.source_trust_level", "contract_b.passage.extraction_method", "contract_b.passage.passage_text"]
+    },
+    "cal-assessment": {
+      "participant": "claim-audit-lab",
+      "owns": ["epistemic_assessment"],
+      "excludes": ["evidence_access_grant", "operational_decision", "execution_authorization"],
+      "actor": "claim-audit-lab",
+      "operation": "assessment.issue",
+      "target_class": "contract_b_claim",
+      "binding": {
+        "target_id": ["contract_b.manifest.bundle_id", "contract_b.claim.claim_id"],
+        "target_hash": ["contract_b.manifest.bundle_hash"],
+        "passage_identity": ["contract_b.claim.evidence_passages.0.source_id", "contract_b.claim.evidence_passages.0.passage_id", "contract_b.claim.evidence_passages.0.passage_hash"]
+      },
+      "forbidden_semantic_inputs": ["contract_b.claim.claim_text", "contract_b.claim.scaffold_support_status", "contract_b.claim.scaffold_claim_strength", "contract_b.claim.scaffold_extraction_fidelity", "contract_b.claim.evidence_passages.0.source_trust_level"]
+    },
+    "decision-issuance": {
+      "participant": "decision-engine-policy",
+      "owns": ["policy_decision"],
+      "excludes": ["epistemic_truth", "execution_authorization", "execution"],
+      "actor": "decision-engine-policy",
+      "operation": "decision.make",
+      "target_class": "contract_c_result",
+      "binding": {
+        "target_id": ["contract_c.result_set_id"],
+        "target_hash": ["contract_c.input.contract_b.bundle_hash"],
+        "input_authority": ["contract_c.input.contract_b.contract_version", "contract_c.input.contract_b.bundle_id", "contract_c.input.contract_b.bundle_hash"],
+        "producer_identity": ["contract_c.producer.semantic_implementation_sha", "contract_c.producer.policy_sha256"]
+      },
+      "forbidden_semantic_inputs": ["contract_c.first_proposition.semantic.reported_verdict", "contract_c.first_proposition.semantic.terminal_branch", "contract_c.first_proposition.semantic.measurement_value", "contract_c.first_proposition.semantic.causal_form"]
+    },
+    "citation-use": {
+      "participant": "citation-agent",
+      "owns": ["citation_use_request"],
+      "excludes": ["epistemic_support", "decision_policy_correctness"],
+      "actor": "citation-agent",
+      "effect_binding": "citation_decision.decision.effect",
+      "target_kind_binding": "citation_decision.target.kind",
+      "target_id_binding": "citation_decision.target.object_id",
+      "target_hash_binding": "citation_decision.target.content_sha256",
+      "forbidden_semantic_inputs": ["citation_decision.decision.reason_codes", "citation_decision.decision.disposition"]
+    },
+    "task-execution": {
+      "participant": "task-agent",
+      "owns": ["task_dispatch_execution"],
+      "excludes": ["decision_policy_correctness", "outcome_verification"],
+      "actor": "task-agent",
+      "effect_binding": "task_decision.decision.effect",
+      "target_kind_binding": "task_decision.target.kind",
+      "target_id_binding": "task_decision.target.object_id",
+      "target_hash_binding": "task_decision.target.content_sha256",
+      "forbidden_semantic_inputs": ["task_decision.decision.reason_codes", "task_decision.decision.disposition"]
+    },
+    "outcome-verification": {
+      "participant": "verifier-agent",
+      "owns": ["outcome_verification"],
+      "excludes": ["decision_correctness", "execution_authorization"],
+      "actor": "verifier-agent",
+      "operation": "outcome.verify",
+      "target_class": "execution_target",
+      "binding": {
+        "target_id": ["execution_record.execution_id"],
+        "target_hash": ["execution_record.target.current_hash"],
+        "execution_binding": ["execution_record.operation", "execution_record.target.class", "execution_record.target.id"]
+      },
+      "forbidden_semantic_inputs": ["execution_record.executor_report", "execution_record.observed_post_state"]
+    }
+  }
+}
