@@ -21,3 +21,5 @@ jobs:
         run: node research/contract-d-schema-bakeoff-rc0/run.mjs
       - name: Run frozen RC1 evolution discriminator
         run: node research/contract-d-schema-bakeoff-rc0/run-rc1.mjs
+      - name: Run frozen RC2 semantic-core discriminator
+        run: node research/contract-d-schema-bakeoff-rc0/run-rc2.mjs
