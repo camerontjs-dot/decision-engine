@@ -1,0 +1,28 @@
+name: Research - Contract E producer-native RC2 (Decision Engine)
+
+on:
+  push:
+    branches: [research/contract-e-producer-native-rc2-20260830]
+  pull_request:
+    paths:
+      - "research/contract-e-producer-native-rc2/**"
+      - ".github/workflows/research-contract-e-producer-native-rc2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node research/contract-e-producer-native-rc2/test.mjs
+      - run: node research/contract-e-producer-native-rc2/emit.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: de-contract-e-native-rc2-${{ github.sha }}
+          path: artifacts/contract-e-native-rc2/descriptors.json
+          retention-days: 30
