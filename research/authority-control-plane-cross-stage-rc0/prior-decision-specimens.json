@@ -1,0 +1,18 @@
+{
+  "source_branch": "research/decision-authorization-cross-usecase-rc1",
+  "source_pr": 15,
+  "specimens": {
+    "source-audit": {
+      "source_blob_sha": "2fb86f3efbf4fe1cf940f0e17a95c75fa051fca3",
+      "decision": {"decision_envelope_version":"rc1/0","input":{"authority_kind":"contract_c","authority_id":"sha256:1111111111111111111111111111111111111111111111111111111111111111"},"policy":{"id":"mainframe-source-audit-transition-shadow","version":"0.0.0-rc1"},"target":{"kind":"mainframe_knowledge_object","object_id":"10_knowledge/example-synthesis.md","content_sha256":"sha256:2222222222222222222222222222222222222222222222222222222222222222"},"decision":{"disposition":"eligible","effect":"add_verified_tag","reason_codes":["source_audit_policy_clear"]}}
+    },
+    "citation": {
+      "source_blob_sha": "656e942bfe015a1672f0806852e5fd1886d25859",
+      "decision": {"decision_envelope_version":"rc1/0","input":{"authority_kind":"mindgraph_citation_assessment","authority_id":"sha256:3333333333333333333333333333333333333333333333333333333333333333"},"policy":{"id":"mainframe-citation-use-shadow","version":"0.0.0-rc1"},"target":{"kind":"mindgraph_retrieval_result","object_id":"mindgraph:result:citable-001","content_sha256":"sha256:4444444444444444444444444444444444444444444444444444444444444444"},"decision":{"disposition":"eligible","effect":"cite_as_evidence","reason_codes":["citation_class_citable"]}}
+    },
+    "task-dispatch": {
+      "source_blob_sha": "cc3534990267499c1c38334a320b6730e38d1f7b",
+      "decision": {"decision_envelope_version":"rc1/0","input":{"authority_kind":"reviewed_task_authority","authority_id":"sha256:5555555555555555555555555555555555555555555555555555555555555555"},"policy":{"id":"mainframe-task-dispatch-eligibility-shadow","version":"0.0.0-rc1"},"target":{"kind":"mainframe_task","object_id":"hyper-realism-archive-readme-state","content_sha256":"sha256:6666666666666666666666666666666666666666666666666666666666666666"},"decision":{"disposition":"eligible","effect":"dispatch_task","reason_codes":["reviewed_ready_and_graduated"]}}
+    }
+  }
+}
