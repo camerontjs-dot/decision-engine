@@ -1,0 +1,63 @@
+name: Research Contract D RC3 Producer Conformance
+
+on:
+  push:
+    branches:
+      - research/contract-d-rc3-producer-conformance
+  pull_request:
+    paths:
+      - "research/contract-d-rc3-producer-conformance/**"
+      - ".github/workflows/research-contract-d-rc3-producer-conformance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  native-rc3-consumption:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine research producer
+        uses: actions/checkout@v4
+        with:
+          path: decision-engine
+      - name: Checkout exact apparatus RC3 candidate
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b24d06caf944facb970df5129ebdd48c21c25eec
+          path: apparatus-contracts
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Emit native Contract D RC3 objects
+        run: node decision-engine/research/contract-d-rc3-producer-conformance/emit.mjs > /tmp/contract-d-rc3.json
+      - name: Validate and consume with frozen apparatus candidate
+        run: |
+          python - <<'PY'
+          import json, sys
+          from pathlib import Path
+          candidate = Path("apparatus-contracts/research/contract-d-independent-authority-rc3/candidate")
+          sys.path.insert(0, str(candidate))
+          from contract_d_core import validate_decision, semantic_identity
+          from contract_d_consume import ApplicabilityExpectation, consume
+          payload = json.loads(Path("/tmp/contract-d-rc3.json").read_text())
+          expected_outcomes = {
+              "source-audit-clear": "candidate_for_authorization",
+              "citation-use-clear": "candidate_for_authorization",
+              "task-dispatch-clear": "candidate_for_authorization",
+              "completed-hold": "hold",
+              "evaluation-failed": "evaluation_failed",
+          }
+          for name, decision in payload["decisions"].items():
+              validate_decision(decision)
+              operation = decision.get("effect", {}).get("type", "knowledge.add_verified_tag")
+              params = decision.get("effect", {}).get("params")
+              expectation = ApplicabilityExpectation(
+                  decision["input_authority"], decision["policy"], decision["target"], operation, params
+              )
+              result = consume(decision, expectation)
+              assert result["outcome"] == expected_outcomes[name], (name, result)
+              print(name, result["outcome"], semantic_identity(decision))
+          assert set(payload["decisions"]) == set(expected_outcomes)
+          PY
