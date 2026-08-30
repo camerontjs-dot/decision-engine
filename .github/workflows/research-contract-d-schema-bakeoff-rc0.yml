@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - name: Run frozen bake-off
+          node-version: "22"
+      - name: Run frozen RC0 bake-off
         run: node research/contract-d-schema-bakeoff-rc0/run.mjs
+      - name: Run frozen RC1 evolution discriminator
+        run: node research/contract-d-schema-bakeoff-rc0/run-rc1.mjs
