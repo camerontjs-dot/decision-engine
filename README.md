@@ -60,6 +60,18 @@ Those fixtures are not calibration gold and the validator does not independently
 
 Current architecture work is testing whether the reusable kernel should remain a small deterministic policy runtime around the Gate idea, or whether existing policy infrastructure is sufficient and a bespoke generalized engine is unnecessary. That question is intentionally unresolved.
 
+## Promoted architecture boundary
+
+Research PRs #14 and #15 support one bounded architecture decision:
+
+**Decision and operational Authorization are separate interfaces.**
+
+A Decision is an inspectable policy conclusion about an exact target. Authorization separately combines that Decision with actor, requested operation, approval/delegation context, and operational restrictions.
+
+A generic `eligible` or `clear` disposition is not sufficient operational authority. The requested operation must bind to a typed Decision effect or equivalent policy-specific output. Execution remains downstream and should be recorded separately.
+
+This boundary does **not** define Contract D 1.0.0, choose an authorization implementation, or authorize automatic mutation. See [the Decision / Authorization EDR](docs/DECISION_AUTHORIZATION_BOUNDARY.md).
+
 ## Run the current surfaces
 
 ### Browser career head
