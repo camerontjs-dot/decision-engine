@@ -1,0 +1,46 @@
+name: Research Authority Control Plane Cross-Stage RC0
+
+on:
+  push:
+    branches:
+      - research/authority-control-plane-cross-stage-rc0
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'research/authority-control-plane-cross-stage-rc0/**'
+      - '.github/workflows/research-authority-control-plane-cross-stage-rc0.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  authority-cross-stage-rc0:
+    name: Authority Cross-Stage RC0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run frozen authority/jurisdiction experiment
+        run: node research/authority-control-plane-cross-stage-rc0/run-rc0.mjs
+
+      - name: Show frozen run summary
+        if: always()
+        run: |
+          if [ -f research/authority-control-plane-cross-stage-rc0/HOSTED-RUN.json ]; then
+            cat research/authority-control-plane-cross-stage-rc0/HOSTED-RUN.json
+          fi
+
+      - name: Upload run summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authority-control-plane-cross-stage-rc0
+          path: research/authority-control-plane-cross-stage-rc0/HOSTED-RUN.json
+          if-no-files-found: warn
