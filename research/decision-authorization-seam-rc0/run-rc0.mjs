@@ -7,6 +7,7 @@ import {
   evaluateAuthorization,
   sha256,
 } from "./authorization.mjs";
+import { entangledAuthorization } from "./negative-control.mjs";
 
 const frozen = readFileSync(new URL("./fixtures/decision.json", import.meta.url));
 const expectedSha = "8826c8ab1cde94b9134f137f593032924cc5875cff6099e9ed425e4f1fc6f7a8";
@@ -97,6 +98,19 @@ const actionMismatch = run(delegated, {
 assert.equal(actionMismatch.authorization, AUTHORIZATION.DENY);
 assert.equal(actionMismatch.reason, "action_out_of_scope");
 
+// Negative control: authority embedded in D cannot vary A/B/C while D stays
+// byte-identical, so it fails the seam's discrimination requirement.
+const entangledA = entangledAuthorization(frozen);
+const entangledB = entangledAuthorization(frozen);
+const entangledC = entangledAuthorization(frozen);
+assert.equal(entangledA, entangledB);
+assert.equal(entangledB, entangledC);
+assert.notEqual(
+  new Set([A.authorization, B.authorization, C.authorization]).size,
+  1,
+  "positive seam must vary authorization across A/B/C",
+);
+
 console.log(JSON.stringify({
   frozenDecisionSha256: expectedSha,
   cases: {
@@ -110,6 +124,13 @@ console.log(JSON.stringify({
     H: H.authorization,
     authoritySmuggling: smuggledResult.authorization,
     actionMismatch: actionMismatch.authorization,
+  },
+  negativeControl: {
+    design: "authorization_embedded_in_decision",
+    A: entangledA,
+    B: entangledB,
+    C: entangledC,
+    discriminatesAuthorizationProfiles: false,
   },
   decisionInvariantAcrossContextCases: true,
   externalMutationPerformed: false,
