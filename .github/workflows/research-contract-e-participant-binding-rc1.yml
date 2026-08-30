@@ -30,17 +30,27 @@ jobs:
       - name: Run frozen participant-binding experiment
         run: node research/contract-e-participant-binding-rc1/run-rc1.mjs
 
-      - name: Show run summary
+      - name: Run stage-authority hardening
+        run: node research/contract-e-participant-binding-rc1/run-hardening.mjs
+
+      - name: Show run summaries
         if: always()
         run: |
-          if [ -f research/contract-e-participant-binding-rc1/HOSTED-RUN.json ]; then
-            cat research/contract-e-participant-binding-rc1/HOSTED-RUN.json
-          fi
+          for f in \
+            research/contract-e-participant-binding-rc1/HOSTED-RUN.json \
+            research/contract-e-participant-binding-rc1/HOSTED-HARDENING.json; do
+            if [ -f "$f" ]; then
+              echo "===== $f ====="
+              cat "$f"
+            fi
+          done
 
-      - name: Upload run summary
+      - name: Upload run summaries
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: contract-e-participant-binding-rc1
-          path: research/contract-e-participant-binding-rc1/HOSTED-RUN.json
+          path: |
+            research/contract-e-participant-binding-rc1/HOSTED-RUN.json
+            research/contract-e-participant-binding-rc1/HOSTED-HARDENING.json
           if-no-files-found: warn
