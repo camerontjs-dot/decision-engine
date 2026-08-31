@@ -2,7 +2,7 @@
 
 Decision Engine is a decision-support research repository for turning explicit inputs and policy into inspectable recommendations without hiding uncertainty or silently acquiring authority to act.
 
-The repository currently contains **two implemented decision heads with different scopes**, plus a separate Contract C research seam. They should not be collapsed into one maturity claim.
+The repository currently contains **two implemented decision heads with different scopes**, plus a separate Contract C integration research seam. They should not be collapsed into one maturity claim.
 
 ## Current implemented surfaces
 
@@ -44,19 +44,24 @@ The implementation is pure: it performs no I/O and resolves no missing evidence.
 
 [`src/gate/notePromotionBar.js`](src/gate/notePromotionBar.js) is one concrete MainFrame note-promotion policy built on that primitive. It is an application of the Gate, not proof that its vocabulary is the final general Decision Engine policy model.
 
-## Contract C research seam
+## Contract C integration research
 
-The proposed Claim Audit Lab → Decision Engine handoff remains **research, not a released production contract**.
+**Contract C 1.0.0 is canonical and released by [`apparatus-contracts`](https://github.com/camerontjs-dot/apparatus-contracts).** It is the decision-agnostic Claim Audit Lab → downstream-consumer contract.
 
-Canonical live correspondence:
+Decision Engine does **not** yet expose a maintained production Contract C consumption path. The adapter/Gate work in this repository remains research until a separate production-promotion decision is justified.
 
-- [Apparatus Contracts #4: Contract C design](https://github.com/camerontjs-dot/apparatus-contracts/issues/4)
+Relevant authority and correspondence:
+
+- [Contract C 1.0.0 release](https://github.com/camerontjs-dot/apparatus-contracts/releases/tag/contract-c-v1.0.0)
 - [Apparatus Contracts #8: living epistemic/interface state](https://github.com/camerontjs-dot/apparatus-contracts/issues/8)
 - [Decision Engine #1: Contract C consumer boundary](https://github.com/camerontjs-dot/decision-engine/issues/1)
+- [Decision Engine #13: real-producer Gate shadow research](https://github.com/camerontjs-dot/decision-engine/pull/13)
 
-The committed [`research/contract-c-seam-shadow/`](research/contract-c-seam-shadow/) fixtures exercise a bounded shadow question: can supplied CAL-style audit state remain distinguishable as it passes through a Decision Engine Gate without turning epistemic conclusions into automatic operational authorization?
+The committed [`research/contract-c-seam-shadow/`](research/contract-c-seam-shadow/) fixtures exercise a bounded shadow question: can supplied Contract C / CAL-style audit state remain distinguishable as it passes through a Decision Engine Gate without turning epistemic conclusions into automatic operational authorization?
 
-Those fixtures are not calibration gold and the validator does not independently establish CAL entailment or citation truth. It replays supplied fields and checks downstream Gate behavior.
+Later research strengthens that seam with authoritative Contract C validation and real current CAL-produced objects. The work remains research-only and does not make the adapter a maintained production interface.
+
+The research fixtures and validators do not independently establish CAL entailment or citation truth. They test downstream consumption and policy behavior against supplied, validated epistemic state.
 
 Current architecture work is testing whether the reusable kernel should remain a small deterministic policy runtime around the Gate idea, or whether existing policy infrastructure is sufficient and a bespoke generalized engine is unnecessary. That question is intentionally unresolved.
 
@@ -122,9 +127,9 @@ This repository does **not** currently establish that:
 
 - the career select/rank engine is a general decision engine;
 - `promote | hold | reject` is the correct universal action vocabulary;
-- Contract C is canonical or released;
+- Decision Engine has a maintained production Contract C consumer;
 - CAL conclusions directly authorize downstream action;
-- synthetic Contract C fixtures validate CAL semantic correctness;
+- synthetic or real-producer Contract C fixtures validate CAL semantic correctness;
 - a Decision Engine recommendation should mutate MainFrame or another external system automatically.
 
 The current useful separation is narrower:
