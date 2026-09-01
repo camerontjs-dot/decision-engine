@@ -1,0 +1,317 @@
+name: Contract C 1.0.0 to Contract D 1.0.0 conformance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/contractCDecision.js'
+      - 'src/contractD.js'
+      - 'tests/contractCToContractD.integration.mjs'
+      - '.github/workflows/contract-c-to-d-1.0.0-conformance.yml'
+      - 'docs/CONTRACT_C_TO_D_PRODUCTION_SLICE.md'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_C_CLEAN_CONSUMER: a488c1b8058b5cda8766e670eb2b18d65e4e504e
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  CONTRACT_D_INDEPENDENT_FREEZE: f5ce28cef76808e390e016d63dec3d50a28fbda2
+  CONTRACT_D_INDEPENDENT_BLOB: 26058b7901347c6e7e3c207de2195a0ab529aa08
+
+jobs:
+  cross-repo-conformance:
+    name: Contract C to D Cross-Repo Conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout immutable Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout immutable Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout frozen Contract C clean consumer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_CLEAN_CONSUMER }}
+          path: _contract_c_clean_consumer
+
+      - name: Checkout frozen real-producer RC1 evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: _contract_c_rc1
+
+      - name: Checkout frozen independent Contract D consumer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: ${{ env.CONTRACT_D_INDEPENDENT_FREEZE }}
+          path: _contract_d_independent
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install released Apparatus validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './_contract_d[dev]'
+
+      - name: Verify exact Contract C and D release identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+      - name: Verify frozen real-CAL Contract C corpus against released canonical validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          root='_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus'
+          test "$(git -C _contract_c_rc1 hash-object research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus/supported-tied-alternatives.json)" = '1b56652f7821610cbc8b850cf0da7beaf9550f0f'
+          test "$(git -C _contract_c_rc1 hash-object research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus/unsupported-residual.json)" = 'f33c9c18cb095d48e8bc4d1fafd77827183fb0f7'
+          for name in supported-tied-alternatives unsupported-residual needs-source-credential not-checkable-unclassified overstated-joint-state; do
+            sha="$(sha256sum "$root/$name.json" | awk '{print $1}')"
+            python _contract_c/validators/contract_c.py \
+              "$root/$name.json" \
+              --expected-sha256 "$sha" \
+              --contract-b-index "$root/$name.contract-b-index.json"
+          done
+
+      - name: Rerun frozen independent Contract C clean consumer
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+        run: node _contract_c_clean_consumer/research/contract-c-1.0.0-clean-consumer-release/validate.mjs
+
+      - name: Execute maintained Contract C to D policy and falsifiers
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          CONTRACT_C_TO_D_OUTPUT_DIR: ${{ github.workspace }}/build/contract-c-to-d
+          PYTHON: python
+        run: node tests/contractCToContractD.integration.mjs
+
+      - name: Validate and consume every emitted Decision with canonical Contract D authority
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, semantic_identity, validate_decision
+
+          root = Path('build/contract-c-to-d')
+          decisions = {
+              p.stem: json.loads(p.read_text())
+              for p in root.glob('*.json')
+              if p.name != 'integration-summary.json'
+          }
+          expected_names = {'clear', 'hold', 'failed', 'contextClear', 'contextHold'}
+          assert set(decisions) == expected_names, set(decisions)
+
+          for decision in decisions.values():
+              validate_decision(decision)
+              canonical_json_bytes(decision)
+
+          def expectation(decision, *, operation='knowledge.add_verified_tag', params=None):
+              return ApplicabilityExpectation(
+                  copy.deepcopy(decision['input_authority']),
+                  copy.deepcopy(decision['policy']),
+                  copy.deepcopy(decision['target']),
+                  operation,
+                  {'scope': 'claim'} if params is None else params,
+              )
+
+          assert consume(decisions['clear'], expectation(decisions['clear']))['outcome'] == 'candidate_for_authorization'
+          assert consume(decisions['hold'], expectation(decisions['hold']))['outcome'] == 'hold'
+          assert consume(decisions['failed'], expectation(decisions['failed']))['outcome'] == 'evaluation_failed'
+          assert consume(decisions['contextClear'], expectation(decisions['contextClear']))['outcome'] == 'candidate_for_authorization'
+          assert consume(decisions['contextHold'], expectation(decisions['contextHold']))['outcome'] == 'hold'
+
+          clear = decisions['clear']
+          base_expected = expectation(clear)
+
+          wrong_input = copy.deepcopy(base_expected)
+          wrong_input = ApplicabilityExpectation(
+              {**wrong_input.input_authority, 'immutable_id': 'sha256:' + '0' * 64},
+              wrong_input.policy,
+              wrong_input.target,
+              wrong_input.requested_operation,
+              wrong_input.effect_params,
+          )
+          assert consume(clear, wrong_input)['outcome'] == 'not_applicable'
+
+          wrong_policy = ApplicabilityExpectation(
+              base_expected.input_authority,
+              {**base_expected.policy, 'version': '1.0.1'},
+              base_expected.target,
+              base_expected.requested_operation,
+              base_expected.effect_params,
+          )
+          assert consume(clear, wrong_policy)['outcome'] == 'not_applicable'
+
+          wrong_target = ApplicabilityExpectation(
+              base_expected.input_authority,
+              base_expected.policy,
+              {**base_expected.target, 'content_sha256': 'sha256:' + '9' * 64},
+              base_expected.requested_operation,
+              base_expected.effect_params,
+          )
+          assert wrong_target.target['id'] == base_expected.target['id']
+          assert consume(clear, wrong_target)['outcome'] == 'not_applicable'
+
+          citation_cross_use = expectation(clear, operation='knowledge.cite_as_evidence', params={})
+          task_cross_use = expectation(clear, operation='task.dispatch', params={})
+          assert consume(clear, citation_cross_use)['outcome'] == 'not_applicable'
+          assert consume(clear, task_cross_use)['outcome'] == 'not_applicable'
+
+          effect_substitution = copy.deepcopy(clear)
+          effect_substitution['effect'] = {'type': 'knowledge.cite_as_evidence', 'version': '1'}
+          validate_decision(effect_substitution)
+          assert consume(effect_substitution, base_expected)['outcome'] == 'not_applicable'
+
+          scope_substitution = copy.deepcopy(clear)
+          scope_substitution['effect']['params']['scope'] = 'object'
+          validate_decision(scope_substitution)
+          assert consume(scope_substitution, base_expected)['outcome'] == 'not_applicable'
+
+          metadata_only = copy.deepcopy(clear)
+          metadata_only['metadata'] = {'reason_codes': ['changed_diagnostic'], 'diagnostics': {'ignored': True}}
+          assert semantic_identity(metadata_only) == semantic_identity(clear)
+
+          changed_policy_identity = copy.deepcopy(clear)
+          changed_policy_identity['policy']['version'] = '1.0.1'
+          validate_decision(changed_policy_identity)
+          assert changed_policy_identity['evaluation'] == clear['evaluation']
+          assert semantic_identity(changed_policy_identity) != semantic_identity(clear)
+
+          # Authorization-firewall negative control: a weak consumer would call CLEAR
+          # "authorized". Canonical Contract D can establish only candidate_for_authorization.
+          weak_outcome = 'authorized' if clear['evaluation'] == {'state': 'completed', 'disposition': 'clear'} else 'not_authorized'
+          assert weak_outcome == 'authorized'
+          canonical_outcome = consume(clear, base_expected)['outcome']
+          assert canonical_outcome == 'candidate_for_authorization'
+          assert canonical_outcome != weak_outcome
+
+          print(json.dumps({
+              'status': 'PASS',
+              'decisions_validated': len(decisions),
+              'clear_outcome': canonical_outcome,
+              'input_substitution': 'caught',
+              'policy_substitution': 'caught',
+              'target_same_id_content_substitution': 'caught',
+              'citation_cross_use': 'caught',
+              'task_cross_use': 'caught',
+              'effect_substitution': 'caught',
+              'effect_scope_substitution': 'caught',
+              'metadata_non_authoritative': True,
+              'policy_identity_authoritative': True,
+              'weak_authorization_collapse_detected': True,
+          }))
+          PY
+
+      - name: Rerun frozen independent Contract D consumer on emitted Decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          src='_contract_d_independent/research/contract-d-rc6-fresh-reproduction-v1/contract_d_rc6_consumer.mjs'
+          test "$(git -C _contract_d_independent hash-object research/contract-d-rc6-fresh-reproduction-v1/contract_d_rc6_consumer.mjs)" = "$CONTRACT_D_INDEPENDENT_BLOB"
+          python - <<'PY'
+          from pathlib import Path
+          src = Path('_contract_d_independent/research/contract-d-rc6-fresh-reproduction-v1/contract_d_rc6_consumer.mjs').read_text()
+          old = "export const CONTRACT_D_VERSION = '0.3.0-rc6';"
+          new = "export const CONTRACT_D_VERSION = '1.0.0';"
+          assert src.count(old) == 1
+          out = src.replace(old, new)
+          assert out.count('0.3.0-rc6') == 0
+          Path('/tmp/contract_d_v1_independent.mjs').write_text(out)
+          PY
+          cat > /tmp/consume-emitted.mjs <<'JS'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { consume, semanticIdentity, validateDecision } from 'file:///tmp/contract_d_v1_independent.mjs';
+
+          const root = 'build/contract-c-to-d';
+          const load = name => JSON.parse(fs.readFileSync(path.join(root, `${name}.json`), 'utf8'));
+          const expected = decision => ({
+            input_authority: structuredClone(decision.input_authority),
+            policy: structuredClone(decision.policy),
+            target: structuredClone(decision.target),
+            requested_operation: 'knowledge.add_verified_tag',
+            effect_params: { scope: 'claim' },
+          });
+
+          const clear = load('clear');
+          const hold = load('hold');
+          const failed = load('failed');
+          for (const decision of [clear, hold, failed, load('contextClear'), load('contextHold')]) {
+            assert.deepEqual(validateDecision(decision), { ok: true });
+            semanticIdentity(decision);
+          }
+          assert.equal(consume(clear, expected(clear)).outcome, 'candidate_for_authorization');
+          assert.equal(consume(hold, expected(hold)).outcome, 'hold');
+          assert.equal(consume(failed, expected(failed)).outcome, 'evaluation_failed');
+
+          const weakAuthorization = clear.evaluation.disposition === 'clear' ? 'authorized' : 'not_authorized';
+          assert.equal(weakAuthorization, 'authorized');
+          assert.notEqual(consume(clear, expected(clear)).outcome, weakAuthorization);
+
+          console.log(JSON.stringify({
+            status: 'PASS',
+            frozen_blob: '26058b7901347c6e7e3c207de2195a0ab529aa08',
+            retarget: 'version-token-only',
+            emitted_decisions: 5,
+            authorization_firewall: 'caught',
+          }));
+          JS
+          node /tmp/consume-emitted.mjs
+
+      - name: Upload bounded conformance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-to-d-1.0.0-conformance
+          path: build/contract-c-to-d
+          if-no-files-found: error
+          retention-days: 90
