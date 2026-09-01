@@ -1,6 +1,6 @@
 # EDR — Bounded Contract C 1.0.0 → Decision → Contract D 1.0.0 production slice
 
-Status: effective only if Decision Engine PR #28 is merged.
+Status: promoted in Decision Engine PR #29 at merge commit `4f01609d792510d4d6789d5bbb6dc132b62f178e`.
 
 ## Decision
 
@@ -107,7 +107,7 @@ This promotion is supported by existing evidence rather than a new broad researc
 - Decision Engine PR #26: maintained Contract D 1.0.0 producer;
 - released Contract C and D validators/consumers, frozen clean Contract C consumer, and frozen independent Contract D consumer.
 
-PR #28 adds a production-specific cross-repository conformance gate over that evidence.
+PR #29 adds the production-specific cross-repository conformance gate over that evidence. Draft PR #28 preserves the otherwise successful first evidence run and the connector-only failure to transition the draft to ready-for-review; PR #29 reused the exact tested head and was the promotion PR.
 
 ## Preserved limitation
 
@@ -119,7 +119,7 @@ That remains an upstream production-reachability limitation. This slice does not
 
 No Contract C or Contract D semantics change. No existing Gate, Select/Rank, career UI, or Contract D producer interface changes.
 
-Rollback is a revert of PR #28. The pre-existing production surfaces remain intact.
+Rollback is a revert of PR #29. The pre-existing production surfaces remain intact.
 
 ## Version decision
 
