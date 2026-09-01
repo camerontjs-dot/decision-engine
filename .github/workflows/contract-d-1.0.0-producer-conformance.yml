@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: camerontjs-dot/apparatus-contracts
-          ref: 22635a16a796b6153cf34e664282e5742d0d6fc9
+          ref: c49693ae301d745301b5cd3d6f7fb489f9ec117a
           path: _apparatus_contracts
       - uses: actions/setup-node@v4
         with:
