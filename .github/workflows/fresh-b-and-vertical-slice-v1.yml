@@ -18,7 +18,9 @@ env:
   DECISION_ENGINE_BASE: 9f5ffc04a0184abe44dc49509058a7ff88893e30
   CAL_PRODUCER_COMMIT: 53f0885b111676794d1bd20e10b91aa58b07e9d4
   EVIDENCE_BUNDLER_COMMIT: 6011789957f3294f97bff260069cfb5bb1c5772f
-  LEGACY_A_FIXTURE_TREE: 8a5c5e7e86d174c92c0e10b82ffc1bffa124a203
+  CONTRACT_B_AUTHORITY: 6a45ab2de09370f3048ffb083e25b487f81117e4
+  MINIMAL_LEGACY_A_TREE: 8a5c5e7e86d174c92c0e10b82ffc1bffa124a203
+  NONEMPTY_LEGACY_A_TREE: c84878bc1199e96128837e964f69d6d5edf9bdd0
   CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
   CONTRACT_C_TAG: contract-c-v1.0.0
   CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
@@ -29,7 +31,7 @@ env:
 
 jobs:
   cross-repository-slice:
-    name: Fresh B and legacy-A vertical slice
+    name: Fresh B then bounded vertical slices
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Decision Engine research aperture
@@ -50,6 +52,13 @@ jobs:
           repository: camerontjs-dot/evidence-bundler
           ref: ${{ env.EVIDENCE_BUNDLER_COMMIT }}
           path: _external/eb
+
+      - name: Checkout current Contract B authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_B_AUTHORITY }}
+          path: _external/apparatus-b
 
       - name: Checkout immutable Contract C release
         uses: actions/checkout@v4
@@ -82,7 +91,9 @@ jobs:
           test "$(git rev-parse "$DECISION_ENGINE_BASE")" = "$DECISION_ENGINE_BASE"
           test "$(git -C _external/cal rev-parse HEAD)" = "$CAL_PRODUCER_COMMIT"
           test "$(git -C _external/eb rev-parse HEAD)" = "$EVIDENCE_BUNDLER_COMMIT"
-          test "$(git -C _external/eb rev-parse HEAD:tests/fixtures/scaffold-run-minimal)" = "$LEGACY_A_FIXTURE_TREE"
+          test "$(git -C _external/apparatus-b rev-parse HEAD)" = "$CONTRACT_B_AUTHORITY"
+          test "$(git -C _external/eb rev-parse HEAD:tests/fixtures/scaffold-run-minimal)" = "$MINIMAL_LEGACY_A_TREE"
+          test "$(git -C _external/eb rev-parse HEAD:examples/handoff-demo/scaffold-run-bm25-handoff-demo)" = "$NONEMPTY_LEGACY_A_TREE"
 
           test "$(git -C _external/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
           test "$(git -C _external/apparatus-c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
@@ -97,12 +108,10 @@ jobs:
           unexpected="$({ git diff --name-only "$DECISION_ENGINE_BASE"...HEAD || true; } | grep -Ev '^(research/fresh-b-and-vertical-slice-v1/|\.github/workflows/fresh-b-and-vertical-slice-v1\.yml$)' || true)"
           test -z "$unexpected" || { echo "unexpected research mutation:" >&2; echo "$unexpected" >&2; exit 1; }
 
-      - name: Install exact producer and validator dependencies
+      - name: Install bounded BM25/CAL/validator dependencies
         shell: bash
         run: |
           set -euo pipefail
-          # The tested path is fixture/BM25 only. Do not install semantic/reranker stacks
-          # that are outside this experiment's information and runtime aperture.
           python -m pip install --disable-pip-version-check \
             'click>=8.1,<9' 'pdfminer.six>=20231228,<20270000' 'pydantic>=2.6,<3' \
             'pypdf>=4.0,<7' 'PyYAML>=6.0,<7' 'rank-bm25>=0.2.2,<0.3' \
@@ -110,45 +119,65 @@ jobs:
           python -m pip install --disable-pip-version-check --no-deps \
             -e ./_external/eb -e ./_external/cal -e ./_external/apparatus-d
 
-      - name: Prepare fresh-B and vertical-slice cases
+      # ------------------------------------------------------------------
+      # Unit 2: fresh valid B -> current CAL -> canonical C -> production D
+      # ------------------------------------------------------------------
+      - name: Unit 2 - prepare fresh Contract B and current CAL Contract C
         shell: bash
         run: |
           set -euo pipefail
-          python research/fresh-b-and-vertical-slice-v1/prepare_cases.py _external/eb build/fresh-b-slice
+          python research/fresh-b-and-vertical-slice-v1/prepare_cases.py \
+            unit2 _external/eb build/fresh-b-slice
 
-      - name: Validate both Contract C outputs against exact release authority
+      - name: Unit 2 - validate Contract B against current canonical authority
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_external/apparatus-b
         shell: bash
         run: |
           set -euo pipefail
-          for case in unit2 vertical; do
-            raw_sha="$(sha256sum "build/fresh-b-slice/$case/contract-c.json" | awk '{print $1}')"
-            python _external/apparatus-c/validators/contract_c.py \
-              "build/fresh-b-slice/$case/contract-c.json" \
-              --expected-sha256 "$raw_sha" \
-              --contract-b-index "build/fresh-b-slice/$case/contract-b-index.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from validators.verify_contract_integrity import verify
+
+          bundle = Path('build/fresh-b-slice/unit2/contract-b')
+          report = verify(bundle, against_pin='1.2.0')
+          receipt = {'passed': report.passed, 'errors': report.errors, 'checked_files': report.checked_files}
+          Path('build/fresh-b-slice/unit2/apparatus-b-verifier.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          )
+          assert report.passed, report.errors
+          PY
+
+      - name: Unit 2 - validate Contract C against exact release authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          raw_sha="$(sha256sum build/fresh-b-slice/unit2/contract-c.json | awk '{print $1}')"
+          python _external/apparatus-c/validators/contract_c.py \
+            build/fresh-b-slice/unit2/contract-c.json \
+            --expected-sha256 "$raw_sha" \
+            --contract-b-index build/fresh-b-slice/unit2/contract-b-index.json
+
+      - name: Unit 2 - invoke unchanged Decision Engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/fresh-b-slice/unit2/decisions
+          csha="$(cat build/fresh-b-slice/unit2/contract-c.sha256)"
+          for context in build/fresh-b-slice/unit2/contexts/*.json; do
+            proposition="$(basename "$context" .json)"
+            node research/fresh-b-and-vertical-slice-v1/invoke.mjs \
+              --contract-c build/fresh-b-slice/unit2/contract-c.json \
+              --expected-contract-c-sha256 "$csha" \
+              --contract-c-authority-root _external/apparatus-c \
+              --expected-contract-b build/fresh-b-slice/unit2/expected-contract-b.json \
+              --decision-context "$context" \
+              --python python \
+              --output "build/fresh-b-slice/unit2/decisions/$proposition.json"
           done
 
-      - name: Invoke unchanged Decision Engine for every proposition
-        shell: bash
-        run: |
-          set -euo pipefail
-          for case in unit2 vertical; do
-            mkdir -p "build/fresh-b-slice/$case/decisions"
-            csha="$(cat "build/fresh-b-slice/$case/contract-c.sha256")"
-            for context in "build/fresh-b-slice/$case/contexts"/*.json; do
-              proposition="$(basename "$context" .json)"
-              node research/fresh-b-and-vertical-slice-v1/invoke.mjs \
-                --contract-c "build/fresh-b-slice/$case/contract-c.json" \
-                --expected-contract-c-sha256 "$csha" \
-                --contract-c-authority-root _external/apparatus-c \
-                --expected-contract-b "build/fresh-b-slice/$case/expected-contract-b.json" \
-                --decision-context "$context" \
-                --python python \
-                --output "build/fresh-b-slice/$case/decisions/$proposition.json"
-            done
-          done
-
-      - name: Validate and consume Contract D outputs; compare the C envelope
+      - name: Unit 2 - validate and consume canonical Contract D
         env:
           PYTHONPATH: ${{ github.workspace }}/_external/apparatus-d
         shell: bash
@@ -157,105 +186,39 @@ jobs:
           python - <<'PY'
           import hashlib
           import json
-          import subprocess
           from pathlib import Path
-
           from validators.contract_d_consume import ApplicabilityExpectation, consume
           from validators.contract_d_core import canonical_json_bytes, validate_decision
 
-          root = Path('build/fresh-b-slice')
-          prepared = json.loads((root / 'prepared-summary.json').read_text())
+          case = Path('build/fresh-b-slice/unit2')
+          c_sha = 'sha256:' + hashlib.sha256((case / 'contract-c.json').read_bytes()).hexdigest()
           outcomes = {}
-
-          for case_name in ('unit2', 'vertical'):
-              case = root / case_name
-              c_bytes = (case / 'contract-c.json').read_bytes()
-              c_sha = 'sha256:' + hashlib.sha256(c_bytes).hexdigest()
-              case_outcomes = {}
-              for decision_path in sorted((case / 'decisions').glob('*.json')):
-                  proposition_id = decision_path.stem
-                  decision = json.loads(decision_path.read_text())
-                  context = json.loads((case / 'contexts' / f'{proposition_id}.json').read_text())
-                  validate_decision(decision)
-                  canonical_json_bytes(decision)
-                  assert decision['input_authority']['immutable_id'] == c_sha
-                  assert decision['target'] == context['target']
-                  assert decision['policy'] == context['policy']
-                  assert decision['effect'] == {
-                      'type': 'knowledge.add_verified_tag',
-                      'version': '1',
-                      'params': {'scope': 'claim'},
-                  }
-                  expectation = ApplicabilityExpectation(
-                      decision['input_authority'],
-                      decision['policy'],
-                      decision['target'],
-                      'knowledge.add_verified_tag',
-                      {'scope': 'claim'},
-                  )
-                  consumed = consume(decision, expectation)
-                  assert 'authorization' not in json.dumps(decision).lower()
-                  case_outcomes[proposition_id] = {
-                      'evaluation': decision['evaluation'],
-                      'canonical_consumer_outcome': consumed['outcome'],
-                  }
-              outcomes[case_name] = case_outcomes
-
-          def proposition_map(case):
-              return {p['proposition_id']: p for p in prepared[case]['propositions']}
-
-          unit2_p = proposition_map('unit2')
-          vertical_p = proposition_map('vertical')
-          common = sorted(set(unit2_p) & set(vertical_p))
-          comparison = {}
-          for pid in common:
-              left = unit2_p[pid]
-              right = vertical_p[pid]
-              comparison[pid] = {
-                  'reported_verdict_same': left['reported_verdict'] == right['reported_verdict'],
-                  'unit2_reported_verdict': left['reported_verdict'],
-                  'vertical_reported_verdict': right['reported_verdict'],
-                  'measurement_same': left['measurement'] == right['measurement'],
-                  'unit2_measurement': left['measurement'],
-                  'vertical_measurement': right['measurement'],
-                  'contribution_count_same': left['contribution_count'] == right['contribution_count'],
-                  'unit2_contribution_count': left['contribution_count'],
-                  'vertical_contribution_count': right['contribution_count'],
-                  'assessments_same': left['assessments'] == right['assessments'],
-                  'unit2_assessments': left['assessments'],
-                  'vertical_assessments': right['assessments'],
-                  'terminal_branch_same': left['terminal_branch'] == right['terminal_branch'],
-                  'unit2_terminal_branch': left['terminal_branch'],
-                  'vertical_terminal_branch': right['terminal_branch'],
-                  'basis_namespaces_same': left['basis_namespaces'] == right['basis_namespaces'],
-                  'unit2_basis_namespaces': left['basis_namespaces'],
-                  'vertical_basis_namespaces': right['basis_namespaces'],
+          for decision_path in sorted((case / 'decisions').glob('*.json')):
+              pid = decision_path.stem
+              decision = json.loads(decision_path.read_text())
+              context = json.loads((case / 'contexts' / f'{pid}.json').read_text())
+              validate_decision(decision)
+              canonical_json_bytes(decision)
+              assert decision['input_authority']['immutable_id'] == c_sha
+              assert decision['target'] == context['target']
+              assert decision['policy'] == context['policy']
+              assert decision['effect'] == {
+                  'type': 'knowledge.add_verified_tag', 'version': '1', 'params': {'scope': 'claim'}
               }
-
-          receipt = {
-              'status': 'PASS',
-              'decision_engine_base': '9f5ffc04a0184abe44dc49509058a7ff88893e30',
-              'run_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
-              'cal_producer_commit': '53f0885b111676794d1bd20e10b91aa58b07e9d4',
-              'evidence_bundler_commit': '6011789957f3294f97bff260069cfb5bb1c5772f',
-              'legacy_a_fixture_tree': '8a5c5e7e86d174c92c0e10b82ffc1bffa124a203',
-              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
-              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
-              'unit2': prepared['unit2'],
-              'vertical': prepared['vertical'],
-              'decision_outcomes': outcomes,
-              'contract_c_comparison': comparison,
-              'contract_a_posture': 'maintained legacy authority; not modernization promotion evidence',
-              'contract_b_1_2_extension_note': 'optional factual-context extension absent in both generated bundles; absence is a valid 1.2.0 discovery state and does not imply closed-world facts',
-              'synthetic_review_truth_claim': False,
-              'decision_semantics_modified': False,
-              'authorization_or_execution_performed': False,
-          }
-          (root / 'run-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
-          print(json.dumps(receipt, indent=2, sort_keys=True))
+              expectation = ApplicabilityExpectation(
+                  decision['input_authority'], decision['policy'], decision['target'],
+                  'knowledge.add_verified_tag', {'scope': 'claim'}
+              )
+              consumed = consume(decision, expectation)
+              assert 'authorization' not in json.dumps(decision).lower()
+              outcomes[pid] = {
+                  'evaluation': decision['evaluation'],
+                  'canonical_consumer_outcome': consumed['outcome'],
+              }
+          (case / 'decision-outcomes.json').write_text(json.dumps(outcomes, indent=2, sort_keys=True) + '\n')
           PY
 
-      - name: Exercise fresh-B binding substitution control
+      - name: Unit 2 - wrong Contract B binding still fails closed
         shell: bash
         run: |
           set -euo pipefail
@@ -275,8 +238,7 @@ jobs:
             --expected-contract-c-sha256 "$csha" \
             --contract-c-authority-root _external/apparatus-c \
             --expected-contract-b build/fresh-b-slice/unit2/wrong-contract-b.json \
-            --decision-context "$context" \
-            --python python \
+            --decision-context "$context" --python python \
             --output build/fresh-b-slice/unit2/should-not-exist.json \
             2> build/fresh-b-slice/unit2/wrong-b.stderr
           status=$?
@@ -285,7 +247,183 @@ jobs:
           grep -q '"code":"contract_b_binding_mismatch"' build/fresh-b-slice/unit2/wrong-b.stderr
           test ! -e build/fresh-b-slice/unit2/should-not-exist.json
 
+      # ------------------------------------------------------------------
+      # Vertical diagnostic: preserve the default-BM25 empty-evidence defect.
+      # ------------------------------------------------------------------
+      - name: Vertical diagnostic - reproduce empty-evidence handoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/fresh-b-and-vertical-slice-v1/prepare_cases.py \
+            vertical-diagnostic _external/eb build/fresh-b-slice
+
+      - name: Vertical diagnostic - classify producer and validator hole
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_external/apparatus-b
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from validators.verify_contract_integrity import verify
+
+          case = Path('build/fresh-b-slice/vertical-diagnostic')
+          summary = json.loads((case / 'diagnostic-summary.json').read_text())
+          assert summary['retrieval_no_candidate_claim_ids'], summary
+          assert summary['synthetic_review']['annotation_count'] == 0, summary
+          assert summary['final_evidence_directory_exists'] is False, summary
+          assert summary['final_total_evidence_passages'] == 0, summary
+          assert summary['final_quality_gates']['every_claim_has_at_least_one_passage'] is False, summary
+          assert summary['evidence_bundler_validation_errors'] == [], summary
+          assert summary['cal_intake']['accepted'] is False, summary
+          assert summary['cal_intake']['message'] == 'evidence/ directory missing', summary
+
+          report = verify(case / 'contract-b', against_pin='1.2.0')
+          receipt = {'passed': report.passed, 'errors': report.errors, 'checked_files': report.checked_files}
+          (case / 'apparatus-b-verifier.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          assert not report.passed, 'canonical verifier unexpectedly accepted empty-evidence B'
+          assert 'evidence/ directory missing' in report.errors, report.errors
+          PY
+
+      # ------------------------------------------------------------------
+      # Non-empty vertical slice: same actual path, known candidate-producing
+      # maintained demo, then CAL -> C -> production Decision -> D.
+      # ------------------------------------------------------------------
+      - name: Vertical non-empty - retrieval review finalization and current CAL
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/fresh-b-and-vertical-slice-v1/prepare_cases.py \
+            vertical-nonempty _external/eb build/fresh-b-slice
+
+      - name: Vertical non-empty - validate finalized Contract B canonically
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_external/apparatus-b
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from validators.verify_contract_integrity import verify
+          case = Path('build/fresh-b-slice/vertical-nonempty')
+          summary = json.loads((case / 'prepared-summary.json').read_text())
+          assert summary['final_evidence_directory_exists'] is True, summary
+          assert summary['final_total_evidence_passages'] > 0, summary
+          assert summary['final_quality_gates']['every_claim_has_at_least_one_passage'] is True, summary
+          assert summary['evidence_bundler_validation_errors'] == [], summary
+          report = verify(case / 'contract-b', against_pin='1.2.0')
+          receipt = {'passed': report.passed, 'errors': report.errors, 'checked_files': report.checked_files}
+          (case / 'apparatus-b-verifier.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          assert report.passed, report.errors
+          PY
+
+      - name: Vertical non-empty - validate Contract C against exact release authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          raw_sha="$(sha256sum build/fresh-b-slice/vertical-nonempty/contract-c.json | awk '{print $1}')"
+          python _external/apparatus-c/validators/contract_c.py \
+            build/fresh-b-slice/vertical-nonempty/contract-c.json \
+            --expected-sha256 "$raw_sha" \
+            --contract-b-index build/fresh-b-slice/vertical-nonempty/contract-b-index.json
+
+      - name: Vertical non-empty - invoke unchanged Decision Engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/fresh-b-slice/vertical-nonempty/decisions
+          csha="$(cat build/fresh-b-slice/vertical-nonempty/contract-c.sha256)"
+          for context in build/fresh-b-slice/vertical-nonempty/contexts/*.json; do
+            proposition="$(basename "$context" .json)"
+            node research/fresh-b-and-vertical-slice-v1/invoke.mjs \
+              --contract-c build/fresh-b-slice/vertical-nonempty/contract-c.json \
+              --expected-contract-c-sha256 "$csha" \
+              --contract-c-authority-root _external/apparatus-c \
+              --expected-contract-b build/fresh-b-slice/vertical-nonempty/expected-contract-b.json \
+              --decision-context "$context" --python python \
+              --output "build/fresh-b-slice/vertical-nonempty/decisions/$proposition.json"
+          done
+
+      - name: Vertical non-empty - validate and consume canonical Contract D
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_external/apparatus-d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, validate_decision
+
+          case = Path('build/fresh-b-slice/vertical-nonempty')
+          c_sha = 'sha256:' + hashlib.sha256((case / 'contract-c.json').read_bytes()).hexdigest()
+          outcomes = {}
+          for decision_path in sorted((case / 'decisions').glob('*.json')):
+              pid = decision_path.stem
+              decision = json.loads(decision_path.read_text())
+              context = json.loads((case / 'contexts' / f'{pid}.json').read_text())
+              validate_decision(decision)
+              canonical_json_bytes(decision)
+              assert decision['input_authority']['immutable_id'] == c_sha
+              assert decision['target'] == context['target']
+              assert decision['policy'] == context['policy']
+              expectation = ApplicabilityExpectation(
+                  decision['input_authority'], decision['policy'], decision['target'],
+                  'knowledge.add_verified_tag', {'scope': 'claim'}
+              )
+              consumed = consume(decision, expectation)
+              assert 'authorization' not in json.dumps(decision).lower()
+              outcomes[pid] = {
+                  'evaluation': decision['evaluation'],
+                  'canonical_consumer_outcome': consumed['outcome'],
+              }
+          (case / 'decision-outcomes.json').write_text(json.dumps(outcomes, indent=2, sort_keys=True) + '\n')
+          PY
+
+      - name: Assemble terminal run receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          root = Path('build/fresh-b-slice')
+          unit2 = json.loads((root / 'unit2/prepared-summary.json').read_text())
+          unit2_d = json.loads((root / 'unit2/decision-outcomes.json').read_text())
+          diagnostic = json.loads((root / 'vertical-diagnostic/diagnostic-summary.json').read_text())
+          nonempty = json.loads((root / 'vertical-nonempty/prepared-summary.json').read_text())
+          nonempty_d = json.loads((root / 'vertical-nonempty/decision-outcomes.json').read_text())
+          receipt = {
+              'status': 'PASS_WITH_PRESERVED_VERTICAL_FALSIFIER',
+              'run_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'decision_engine_base': '9f5ffc04a0184abe44dc49509058a7ff88893e30',
+              'cal_producer_commit': '53f0885b111676794d1bd20e10b91aa58b07e9d4',
+              'evidence_bundler_commit': '6011789957f3294f97bff260069cfb5bb1c5772f',
+              'contract_b_authority': '6a45ab2de09370f3048ffb083e25b487f81117e4',
+              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
+              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
+              'unit2': unit2,
+              'unit2_decisions': unit2_d,
+              'vertical_default_bm25_falsifier': diagnostic,
+              'vertical_nonempty': nonempty,
+              'vertical_nonempty_decisions': nonempty_d,
+              'contract_a_posture': 'maintained legacy authority; not modernization promotion evidence',
+              'current_cal_posture': 'producer under test; observed C shape is not asserted as final CAL semantics',
+              'synthetic_review_truth_claim': False,
+              'decision_semantics_modified': False,
+              'authorization_or_execution_performed': False,
+          }
+          (root / 'run-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+
       - name: Upload frozen experiment evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fresh-b-and-vertical-slice-v1
