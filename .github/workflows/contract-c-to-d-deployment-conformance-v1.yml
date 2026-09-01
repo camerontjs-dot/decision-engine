@@ -1,0 +1,359 @@
+name: Contract C to D deployment conformance v1
+
+on:
+  push:
+    branches:
+      - research/contract-c-to-d-deployment-conformance-v1
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/contract-c-to-d-deployment-conformance-v1/**'
+      - '.github/workflows/contract-c-to-d-deployment-conformance-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DECISION_ENGINE_BASE: 9f5ffc04a0184abe44dc49509058a7ff88893e30
+  CAL_PRODUCER_COMMIT: 53f0885b111676794d1bd20e10b91aa58b07e9d4
+  CONTRACT_B_HANDOFF: 213ed9e912b922bd5c57ef58009eb6b0d7fff398
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+
+jobs:
+  deployment-conformance:
+    name: File-oriented production invocation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine research aperture
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact current CAL producer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.CAL_PRODUCER_COMMIT }}
+          path: _external/cal
+
+      - name: Checkout exact Contract B handoff
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_B_HANDOFF }}
+          path: _external/apparatus-handoff
+
+      - name: Checkout immutable Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _external/apparatus-c
+          fetch-depth: 0
+
+      - name: Checkout immutable Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _external/apparatus-d
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify immutable identities and semantic non-mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _external/cal rev-parse HEAD)" = "$CAL_PRODUCER_COMMIT"
+          test "$(git -C _external/apparatus-handoff rev-parse HEAD)" = "$CONTRACT_B_HANDOFF"
+
+          test "$(git -C _external/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _external/apparatus-c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _external/apparatus-c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _external/apparatus-c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _external/apparatus-d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _external/apparatus-d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _external/apparatus-d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+          git diff --exit-code "$DECISION_ENGINE_BASE" -- src/contractCDecision.js src/contractD.js
+          unexpected="$({ git diff --name-only "$DECISION_ENGINE_BASE"...HEAD || true; } | grep -Ev '^(research/contract-c-to-d-deployment-conformance-v1/|\.github/workflows/contract-c-to-d-deployment-conformance-v1\.yml$)' || true)"
+          test -z "$unexpected" || { echo "unexpected research mutation:" >&2; echo "$unexpected" >&2; exit 1; }
+
+      - name: Install released validator and CAL dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e './_external/apparatus-d[dev]'
+          cd _external/cal
+          uv sync --extra dev
+
+      - name: Reconstruct exact Contract B input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/deployment
+          python - <<'PY'
+          import base64
+          import io
+          import json
+          from pathlib import Path
+          import zipfile
+
+          root = Path('_external/apparatus-handoff/handoffs/contract-c/rc2-consumer-b')
+          manifest = json.loads((root / 'MANIFEST.json').read_text())
+          parts = sorted(manifest['contract_b_input']['base64_parts'])
+          encoded = ''.join((root / part).read_text().rstrip('\n') for part in parts)
+          raw = base64.b64decode(encoded, validate=True)
+          out = Path('build/deployment/contract-b')
+          out.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+              archive.extractall(out)
+          PY
+
+      - name: Produce current CAL Contract C and independent caller bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _external/cal
+          uv run python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          from claim_audit_lab.auditor import audit_claims
+          from claim_audit_lab.contracts.adapter import adapt_bundle_to_pipeline, build_claim_evidence_scopes
+          from claim_audit_lab.contracts.bundle_loader import load_bundle
+          from claim_audit_lab.contracts.contract_c import export_contract_c_bytes
+
+          workspace = Path('../..').resolve()
+          bundle_dir = next((workspace / 'build/deployment/contract-b').glob('contract-b-*'))
+          contents = load_bundle(bundle_dir, deviations_dir=workspace / 'build/deployment/cal-deviations')
+          claims, evidence_bundle, audit_config = adapt_bundle_to_pipeline(contents)
+          assessments = audit_claims(
+              claims,
+              evidence_bundle,
+              audit_config,
+              evidence_scopes=build_claim_evidence_scopes(contents),
+          )
+          raw = export_contract_c_bytes(
+              contents=contents,
+              assessments=assessments,
+              evidence_bundle=evidence_bundle,
+              audit_config=audit_config,
+          )
+
+          # Independent caller authority comes from the Contract B manifest and source claim,
+          # not by reflecting Contract C's input/target fields back into the Decision Engine.
+          expected_b = {
+              'contract_version': contents.manifest.schema_version,
+              'bundle_id': contents.manifest.bundle_id,
+              'bundle_hash': contents.manifest.bundle.bundle_hash,
+          }
+          target = next(claim for claim in claims if claim.id == 'clm-txt')
+          context = {
+              'policy': {
+                  'id': 'decision-engine.contract-c.supported-claim-verification',
+                  'version': '1.0.0',
+              },
+              'proposition_id': target.id,
+              'target': {
+                  'kind': 'claim',
+                  'id': target.id,
+                  'content_sha256': 'sha256:' + hashlib.sha256(target.text.encode('utf-8')).hexdigest(),
+              },
+          }
+
+          out = workspace / 'build/deployment'
+          (out / 'contract-c.json').write_bytes(raw)
+          (out / 'expected-contract-b.json').write_text(json.dumps(expected_b, sort_keys=True) + '\n')
+          (out / 'decision-context.json').write_text(json.dumps(context, sort_keys=True) + '\n')
+
+          released = (workspace / '_external/apparatus-c/fixtures/contract-c/1.0.0/valid-canonical.json').read_bytes()
+          assert raw == released, 'current CAL producer is not byte-identical to released Contract C fixture for the frozen Contract B input'
+          PY
+
+      - name: Validate producer output with released Contract C authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(sha256sum build/deployment/contract-c.json | awk '{print $1}')"
+          python _external/apparatus-c/validators/contract_c.py \
+            build/deployment/contract-c.json \
+            --expected-sha256 "$sha" \
+            --contract-b-index _external/apparatus-c/fixtures/contract-c/1.0.0/contract-b-index.json
+          printf 'sha256:%s\n' "$sha" > build/deployment/contract-c.sha256
+
+      - name: Invoke maintained Decision Engine through file-oriented caller
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(cat build/deployment/contract-c.sha256)"
+          node research/contract-c-to-d-deployment-conformance-v1/invoke.mjs \
+            --contract-c build/deployment/contract-c.json \
+            --expected-contract-c-sha256 "$sha" \
+            --contract-c-authority-root _external/apparatus-c \
+            --expected-contract-b build/deployment/expected-contract-b.json \
+            --decision-context build/deployment/decision-context.json \
+            --python python \
+            --output build/deployment/decision.json
+
+      - name: Exercise caller-boundary negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('build/deployment')
+          wrong_b = json.loads((root / 'expected-contract-b.json').read_text())
+          wrong_b['bundle_id'] += '-substituted'
+          (root / 'wrong-contract-b.json').write_text(json.dumps(wrong_b) + '\n')
+
+          wrong_context = json.loads((root / 'decision-context.json').read_text())
+          wrong_context['target']['content_sha256'] = 'sha256:' + ('9' * 64)
+          (root / 'wrong-context.json').write_text(json.dumps(wrong_context) + '\n')
+          PY
+
+          sha="$(cat build/deployment/contract-c.sha256)"
+          common=(
+            --contract-c build/deployment/contract-c.json
+            --contract-c-authority-root _external/apparatus-c
+            --python python
+          )
+
+          set +e
+          node research/contract-c-to-d-deployment-conformance-v1/invoke.mjs \
+            "${common[@]}" \
+            --expected-contract-c-sha256 "$sha" \
+            --expected-contract-b build/deployment/wrong-contract-b.json \
+            --decision-context build/deployment/decision-context.json \
+            --output build/deployment/should-not-exist-wrong-b.json \
+            2> build/deployment/wrong-b.stderr
+          wrong_b_status=$?
+
+          node research/contract-c-to-d-deployment-conformance-v1/invoke.mjs \
+            "${common[@]}" \
+            --expected-contract-c-sha256 "$sha" \
+            --expected-contract-b build/deployment/expected-contract-b.json \
+            --decision-context build/deployment/wrong-context.json \
+            --output build/deployment/should-not-exist-wrong-context.json \
+            2> build/deployment/wrong-context.stderr
+          wrong_context_status=$?
+
+          node research/contract-c-to-d-deployment-conformance-v1/invoke.mjs \
+            "${common[@]}" \
+            --expected-contract-c-sha256 "sha256:$(printf '0%.0s' {1..64})" \
+            --expected-contract-b build/deployment/expected-contract-b.json \
+            --decision-context build/deployment/decision-context.json \
+            --output build/deployment/should-not-exist-wrong-sha.json \
+            2> build/deployment/wrong-sha.stderr
+          wrong_sha_status=$?
+          set -e
+
+          test "$wrong_b_status" -ne 0
+          test "$wrong_context_status" -ne 0
+          test "$wrong_sha_status" -ne 0
+          grep -q '"code":"contract_b_binding_mismatch"' build/deployment/wrong-b.stderr
+          grep -q '"code":"target_binding_mismatch"' build/deployment/wrong-context.stderr
+          grep -q '"code":"contract_c_whole_object_mismatch"' build/deployment/wrong-sha.stderr
+          test ! -e build/deployment/should-not-exist-wrong-b.json
+          test ! -e build/deployment/should-not-exist-wrong-context.json
+          test ! -e build/deployment/should-not-exist-wrong-sha.json
+
+      - name: Validate and independently consume emitted Contract D
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_external/apparatus-d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, validate_decision
+
+          root = Path('build/deployment')
+          decision = json.loads((root / 'decision.json').read_text())
+          expected_b = json.loads((root / 'expected-contract-b.json').read_text())
+          context = json.loads((root / 'decision-context.json').read_text())
+          c_bytes = (root / 'contract-c.json').read_bytes()
+          c_sha = 'sha256:' + hashlib.sha256(c_bytes).hexdigest()
+
+          validate_decision(decision)
+          canonical_json_bytes(decision)
+          assert decision['evaluation'] == {'state': 'completed', 'disposition': 'hold'}
+          assert decision['input_authority']['immutable_id'] == c_sha
+          assert decision['target'] == context['target']
+          assert decision['policy'] == context['policy']
+          assert decision['effect'] == {
+              'type': 'knowledge.add_verified_tag',
+              'version': '1',
+              'params': {'scope': 'claim'},
+          }
+
+          expectation = ApplicabilityExpectation(
+              decision['input_authority'],
+              decision['policy'],
+              decision['target'],
+              'knowledge.add_verified_tag',
+              {'scope': 'claim'},
+          )
+          consumed = consume(decision, expectation)
+          assert consumed['outcome'] == 'hold'
+          assert consumed['outcome'] != 'candidate_for_authorization'
+          assert 'authorization' not in json.dumps(decision).lower()
+
+          receipt = {
+              'status': 'PASS',
+              'decision_engine_base': '9f5ffc04a0184abe44dc49509058a7ff88893e30',
+              'decision_engine_run_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'cal_producer_commit': '53f0885b111676794d1bd20e10b91aa58b07e9d4',
+              'contract_b_handoff': '213ed9e912b922bd5c57ef58009eb6b0d7fff398',
+              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
+              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
+              'contract_c_sha256': c_sha,
+              'contract_b_binding': expected_b,
+              'target_binding': context['target'],
+              'observed_disposition': 'hold',
+              'canonical_contract_d_consumer_outcome': consumed['outcome'],
+              'current_cal_byte_identical_to_released_fixture': True,
+              'wrong_contract_b_rejected': True,
+              'wrong_target_rejected': True,
+              'wrong_contract_c_sha_rejected': True,
+              'decision_semantics_modified': False,
+              'external_mutation_performed': False,
+              'authorization_established': False,
+          }
+          (root / 'deployment-conformance-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Upload deployment conformance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-to-d-deployment-conformance-v1
+          path: build/deployment
+          if-no-files-found: error
+          retention-days: 90
