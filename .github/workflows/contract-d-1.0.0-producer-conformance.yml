@@ -36,11 +36,11 @@ jobs:
     steps:
       - name: Checkout Decision Engine promotion head
         uses: actions/checkout@v4
-      - name: Checkout exact Apparatus Contract D promotion head
+      - name: Checkout exact Apparatus Contract D production merge
         uses: actions/checkout@v4
         with:
           repository: camerontjs-dot/apparatus-contracts
-          ref: 5f6717486f03912583e0e05eb9165c3b8a6dfab4
+          ref: 68d0cd82def0faaadd3ad5410fb40ec68675b8bd
           path: _apparatus_contracts
       - uses: actions/setup-node@v4
         with:
