@@ -1,0 +1,287 @@
+name: Fresh Contract B and vertical slice v1
+
+on:
+  push:
+    branches:
+      - research/fresh-b-and-vertical-slice-v1
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/fresh-b-and-vertical-slice-v1/**'
+      - '.github/workflows/fresh-b-and-vertical-slice-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DECISION_ENGINE_BASE: 9f5ffc04a0184abe44dc49509058a7ff88893e30
+  CAL_PRODUCER_COMMIT: 53f0885b111676794d1bd20e10b91aa58b07e9d4
+  EVIDENCE_BUNDLER_COMMIT: 6011789957f3294f97bff260069cfb5bb1c5772f
+  LEGACY_A_FIXTURE_TREE: 8a5c5e7e86d174c92c0e10b82ffc1bffa124a203
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+
+jobs:
+  cross-repository-slice:
+    name: Fresh B and legacy-A vertical slice
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine research aperture
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact current CAL producer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.CAL_PRODUCER_COMMIT }}
+          path: _external/cal
+
+      - name: Checkout exact current Evidence Bundler
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: ${{ env.EVIDENCE_BUNDLER_COMMIT }}
+          path: _external/eb
+
+      - name: Checkout immutable Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _external/apparatus-c
+          fetch-depth: 0
+
+      - name: Checkout immutable Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _external/apparatus-d
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify immutable identities and research-only mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "$DECISION_ENGINE_BASE")" = "$DECISION_ENGINE_BASE"
+          test "$(git -C _external/cal rev-parse HEAD)" = "$CAL_PRODUCER_COMMIT"
+          test "$(git -C _external/eb rev-parse HEAD)" = "$EVIDENCE_BUNDLER_COMMIT"
+          test "$(git -C _external/eb rev-parse HEAD:tests/fixtures/scaffold-run-minimal)" = "$LEGACY_A_FIXTURE_TREE"
+
+          test "$(git -C _external/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _external/apparatus-c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _external/apparatus-c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _external/apparatus-c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _external/apparatus-d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _external/apparatus-d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _external/apparatus-d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+          git diff --exit-code "$DECISION_ENGINE_BASE" -- src/contractCDecision.js src/contractD.js
+          unexpected="$({ git diff --name-only "$DECISION_ENGINE_BASE"...HEAD || true; } | grep -Ev '^(research/fresh-b-and-vertical-slice-v1/|\.github/workflows/fresh-b-and-vertical-slice-v1\.yml$)' || true)"
+          test -z "$unexpected" || { echo "unexpected research mutation:" >&2; echo "$unexpected" >&2; exit 1; }
+
+      - name: Install exact producer and validator dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ./_external/eb -e ./_external/cal -e './_external/apparatus-d[dev]'
+
+      - name: Prepare fresh-B and vertical-slice cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/fresh-b-and-vertical-slice-v1/prepare_cases.py _external/eb build/fresh-b-slice
+
+      - name: Validate both Contract C outputs against exact release authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          for case in unit2 vertical; do
+            raw_sha="$(sha256sum "build/fresh-b-slice/$case/contract-c.json" | awk '{print $1}')"
+            python _external/apparatus-c/validators/contract_c.py \
+              "build/fresh-b-slice/$case/contract-c.json" \
+              --expected-sha256 "$raw_sha" \
+              --contract-b-index "build/fresh-b-slice/$case/contract-b-index.json"
+          done
+
+      - name: Invoke unchanged Decision Engine for every proposition
+        shell: bash
+        run: |
+          set -euo pipefail
+          for case in unit2 vertical; do
+            mkdir -p "build/fresh-b-slice/$case/decisions"
+            csha="$(cat "build/fresh-b-slice/$case/contract-c.sha256")"
+            for context in "build/fresh-b-slice/$case/contexts"/*.json; do
+              proposition="$(basename "$context" .json)"
+              node research/fresh-b-and-vertical-slice-v1/invoke.mjs \
+                --contract-c "build/fresh-b-slice/$case/contract-c.json" \
+                --expected-contract-c-sha256 "$csha" \
+                --contract-c-authority-root _external/apparatus-c \
+                --expected-contract-b "build/fresh-b-slice/$case/expected-contract-b.json" \
+                --decision-context "$context" \
+                --python python \
+                --output "build/fresh-b-slice/$case/decisions/$proposition.json"
+            done
+          done
+
+      - name: Validate and consume Contract D outputs; compare the C envelope
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_external/apparatus-d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, validate_decision
+
+          root = Path('build/fresh-b-slice')
+          prepared = json.loads((root / 'prepared-summary.json').read_text())
+          outcomes = {}
+
+          for case_name in ('unit2', 'vertical'):
+              case = root / case_name
+              c_bytes = (case / 'contract-c.json').read_bytes()
+              c_sha = 'sha256:' + hashlib.sha256(c_bytes).hexdigest()
+              case_outcomes = {}
+              for decision_path in sorted((case / 'decisions').glob('*.json')):
+                  proposition_id = decision_path.stem
+                  decision = json.loads(decision_path.read_text())
+                  context = json.loads((case / 'contexts' / f'{proposition_id}.json').read_text())
+                  validate_decision(decision)
+                  canonical_json_bytes(decision)
+                  assert decision['input_authority']['immutable_id'] == c_sha
+                  assert decision['target'] == context['target']
+                  assert decision['policy'] == context['policy']
+                  assert decision['effect'] == {
+                      'type': 'knowledge.add_verified_tag',
+                      'version': '1',
+                      'params': {'scope': 'claim'},
+                  }
+                  expectation = ApplicabilityExpectation(
+                      decision['input_authority'],
+                      decision['policy'],
+                      decision['target'],
+                      'knowledge.add_verified_tag',
+                      {'scope': 'claim'},
+                  )
+                  consumed = consume(decision, expectation)
+                  assert 'authorization' not in json.dumps(decision).lower()
+                  case_outcomes[proposition_id] = {
+                      'evaluation': decision['evaluation'],
+                      'canonical_consumer_outcome': consumed['outcome'],
+                  }
+              outcomes[case_name] = case_outcomes
+
+          def proposition_map(case):
+              return {p['proposition_id']: p for p in prepared[case]['propositions']}
+
+          unit2_p = proposition_map('unit2')
+          vertical_p = proposition_map('vertical')
+          common = sorted(set(unit2_p) & set(vertical_p))
+          comparison = {}
+          for pid in common:
+              left = unit2_p[pid]
+              right = vertical_p[pid]
+              comparison[pid] = {
+                  'reported_verdict_same': left['reported_verdict'] == right['reported_verdict'],
+                  'unit2_reported_verdict': left['reported_verdict'],
+                  'vertical_reported_verdict': right['reported_verdict'],
+                  'measurement_same': left['measurement'] == right['measurement'],
+                  'unit2_measurement': left['measurement'],
+                  'vertical_measurement': right['measurement'],
+                  'contribution_count_same': left['contribution_count'] == right['contribution_count'],
+                  'unit2_contribution_count': left['contribution_count'],
+                  'vertical_contribution_count': right['contribution_count'],
+                  'assessments_same': left['assessments'] == right['assessments'],
+                  'unit2_assessments': left['assessments'],
+                  'vertical_assessments': right['assessments'],
+                  'terminal_branch_same': left['terminal_branch'] == right['terminal_branch'],
+                  'unit2_terminal_branch': left['terminal_branch'],
+                  'vertical_terminal_branch': right['terminal_branch'],
+                  'basis_namespaces_same': left['basis_namespaces'] == right['basis_namespaces'],
+                  'unit2_basis_namespaces': left['basis_namespaces'],
+                  'vertical_basis_namespaces': right['basis_namespaces'],
+              }
+
+          receipt = {
+              'status': 'PASS',
+              'decision_engine_base': '9f5ffc04a0184abe44dc49509058a7ff88893e30',
+              'run_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'cal_producer_commit': '53f0885b111676794d1bd20e10b91aa58b07e9d4',
+              'evidence_bundler_commit': '6011789957f3294f97bff260069cfb5bb1c5772f',
+              'legacy_a_fixture_tree': '8a5c5e7e86d174c92c0e10b82ffc1bffa124a203',
+              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
+              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
+              'unit2': prepared['unit2'],
+              'vertical': prepared['vertical'],
+              'decision_outcomes': outcomes,
+              'contract_c_comparison': comparison,
+              'contract_a_posture': 'maintained legacy authority; not modernization promotion evidence',
+              'contract_b_1_2_extension_note': 'optional factual-context extension absent in both generated bundles; absence is a valid 1.2.0 discovery state and does not imply closed-world facts',
+              'synthetic_review_truth_claim': False,
+              'decision_semantics_modified': False,
+              'authorization_or_execution_performed': False,
+          }
+          (root / 'run-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+
+      - name: Exercise fresh-B binding substitution control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('build/fresh-b-slice/unit2')
+          wrong = json.loads((root / 'expected-contract-b.json').read_text())
+          wrong['bundle_id'] += '-substituted'
+          (root / 'wrong-contract-b.json').write_text(json.dumps(wrong) + '\n')
+          PY
+          context="$(find build/fresh-b-slice/unit2/contexts -name '*.json' | sort | head -n1)"
+          csha="$(cat build/fresh-b-slice/unit2/contract-c.sha256)"
+          set +e
+          node research/fresh-b-and-vertical-slice-v1/invoke.mjs \
+            --contract-c build/fresh-b-slice/unit2/contract-c.json \
+            --expected-contract-c-sha256 "$csha" \
+            --contract-c-authority-root _external/apparatus-c \
+            --expected-contract-b build/fresh-b-slice/unit2/wrong-contract-b.json \
+            --decision-context "$context" \
+            --python python \
+            --output build/fresh-b-slice/unit2/should-not-exist.json \
+            2> build/fresh-b-slice/unit2/wrong-b.stderr
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q '"code":"contract_b_binding_mismatch"' build/fresh-b-slice/unit2/wrong-b.stderr
+          test ! -e build/fresh-b-slice/unit2/should-not-exist.json
+
+      - name: Upload frozen experiment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-b-and-vertical-slice-v1
+          path: build/fresh-b-slice
+          if-no-files-found: error
+          retention-days: 90
