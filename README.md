@@ -1,50 +1,18 @@
 # Decision Engine
 
+![Decision Engine](assets/social-card.png)
+
 Decision Engine is a decision-support research repository for turning explicit inputs and policy into inspectable recommendations without hiding uncertainty or silently acquiring authority to act.
 
-The repository currently contains **two pre-existing decision heads with different scopes**, plus one maintained bounded Contract C 1.0.0 → Contract D 1.0.0 production path. They should not be collapsed into one maturity claim.
+The repository currently contains **one maintained bounded Contract C 1.0.0 → Contract D 1.0.0 production path** for the claim-audit pipeline, plus two pre-existing decision heads with different scopes. They should not be collapsed into one maturity claim.
+
+Pipeline siblings: [Claim Audit Lab](https://github.com/camerontjs-dot/claim-audit-lab), [Evidence Bundler](https://github.com/camerontjs-dot/evidence-bundler), and [Apparatus Contracts](https://github.com/camerontjs-dot/apparatus-contracts). The standalone career presentation lives in [`career-decision-engine`](https://github.com/camerontjs-dot/career-decision-engine).
 
 ## Current implemented surfaces
 
-### 1. Select / rank head: career comparison
+### 1. Bounded Contract C → Contract D policy path
 
-The original application is a browser-based career comparison tool in [`src/decisionEngine.js`](src/decisionEngine.js), with the UI in [`index.html`](index.html) and [`src/app.js`](src/app.js).
-
-It compares fictional job offers or career paths across explicit dimensions, weights, caveats, and confidence rules. The engine is deterministic and separate from the UI. Its tests cover scoring invariants, output quality, and a broad combination matrix.
-
-This head is **domain-specific**. It is not evidence that the weighted career scorer is a general-purpose decision kernel.
-
-A separate public repository, [`career-decision-engine`](https://github.com/camerontjs-dot/career-decision-engine), owns the standalone career-project presentation. This repository retains the implementation as a working baseline and regression surface while broader decision primitives are researched.
-
-### 2. Gate head: one item against a stated bar
-
-[`src/gate/gateHead.js`](src/gate/gateHead.js) implements a smaller reusable primitive for a different question:
-
-> Does this one item clear this explicitly stated bar?
-
-The Gate evaluates named criteria with three outcomes:
-
-- `pass`
-- `fail`
-- `unknown`
-
-The decision rule is deterministic:
-
-```text
-any blocking fail     -> reject
-any blocking unknown  -> hold
-otherwise             -> promote
-```
-
-`unknown` is deliberately distinct from `fail`. A missing or unobserved condition may hold a decision, but it does not manufacture an adverse finding.
-
-The Gate does not use a combined score. It records which criteria passed, failed, or remained unknown, and advisory findings remain visible as caveats.
-
-The implementation is pure: it performs no I/O and resolves no missing evidence. Callers supply observations. Positive outputs are recommendations, not mutations; the returned record carries `requiresHumanApproval` where the policy demands it and always records `appliedAutomatically: false`.
-
-[`src/gate/notePromotionBar.js`](src/gate/notePromotionBar.js) is one concrete MainFrame note-promotion policy built on that primitive. It is an application of the Gate, not proof that its vocabulary is the final general Decision Engine policy model.
-
-### 3. Bounded Contract C → Contract D policy path
+This is the claim-audit pipeline path. [Claim Audit Lab](https://github.com/camerontjs-dot/claim-audit-lab) exports Contract C; [Evidence Bundler](https://github.com/camerontjs-dot/evidence-bundler) prepares the Contract B evidence that CAL audits; [Apparatus Contracts](https://github.com/camerontjs-dot/apparatus-contracts) is the canonical contract authority.
 
 [`src/contractCDecision.js`](src/contractCDecision.js) is the maintained production consumer for one explicit policy:
 
@@ -78,6 +46,46 @@ A `clear` Decision is **not Authorization**. Under exact Contract D applicabilit
 The production path deliberately does **not** route through the Gate head. Contract D 1.0.0 owns `clear | hold | evaluation.failed`; the existing Gate owns `promote | hold | reject`. For this one policy, the smaller supported primitive is a deterministic policy function after exact Contract C conformance. This does not establish that Gate is obsolete or that future policies should use the same shape.
 
 See [`docs/CONTRACT_C_TO_D_PRODUCTION_SLICE.md`](docs/CONTRACT_C_TO_D_PRODUCTION_SLICE.md) for the exact promoted boundary, authority pins, evidence basis, rollback, and reconsideration triggers.
+
+### 2. Select / rank head: career comparison
+
+The original application is a browser-based career comparison tool in [`src/decisionEngine.js`](src/decisionEngine.js), with the UI in [`index.html`](index.html) and [`src/app.js`](src/app.js).
+
+It compares fictional job offers or career paths across explicit dimensions, weights, caveats, and confidence rules. The engine is deterministic and separate from the UI. Its tests cover scoring invariants, output quality, and a broad combination matrix.
+
+This head is **domain-specific**. It is not evidence that the weighted career scorer is a general-purpose decision kernel.
+
+A separate public repository, [`career-decision-engine`](https://github.com/camerontjs-dot/career-decision-engine), owns the standalone career-project presentation. This repository retains the implementation as a working baseline and regression surface while broader decision primitives are researched.
+
+![Engine Trace](assets/Engine%20Trace.png)
+
+### 3. Gate head: one item against a stated bar
+
+[`src/gate/gateHead.js`](src/gate/gateHead.js) implements a smaller reusable primitive for a different question:
+
+> Does this one item clear this explicitly stated bar?
+
+The Gate evaluates named criteria with three outcomes:
+
+- `pass`
+- `fail`
+- `unknown`
+
+The decision rule is deterministic:
+
+```text
+any blocking fail     -> reject
+any blocking unknown  -> hold
+otherwise             -> promote
+```
+
+`unknown` is deliberately distinct from `fail`. A missing or unobserved condition may hold a decision, but it does not manufacture an adverse finding.
+
+The Gate does not use a combined score. It records which criteria passed, failed, or remained unknown, and advisory findings remain visible as caveats.
+
+The implementation is pure: it performs no I/O and resolves no missing evidence. Callers supply observations. Positive outputs are recommendations, not mutations; the returned record carries `requiresHumanApproval` where the policy demands it and always records `appliedAutomatically: false`.
+
+[`src/gate/notePromotionBar.js`](src/gate/notePromotionBar.js) is one concrete MainFrame note-promotion policy built on that primitive. It is an application of the Gate, not proof that its vocabulary is the final general Decision Engine policy model.
 
 ## Contract C and Contract D authority
 
@@ -117,6 +125,10 @@ This boundary is preserved by Contract D 1.0.0 consumption: exact `clear` plus e
 
 ## Run the current surfaces
 
+### Contract C → Contract D conformance
+
+The production integration test is exercised by `.github/workflows/contract-c-to-d-1.0.0-conformance.yml` because it requires exact checkouts of the released Apparatus authorities and frozen external consumers/evidence.
+
 ### Browser career head
 
 Open:
@@ -145,10 +157,6 @@ node --test tests/gateHead.test.mjs
 ```bash
 node research/contract-c-seam-shadow/validate-fixtures.mjs
 ```
-
-### Contract C → Contract D conformance
-
-The production integration test is exercised by `.github/workflows/contract-c-to-d-1.0.0-conformance.yml` because it requires exact checkouts of the released Apparatus authorities and frozen external consumers/evidence.
 
 ## Repository map
 
