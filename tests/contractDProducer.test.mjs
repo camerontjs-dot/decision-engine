@@ -1,48 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { CONTRACT_D_VERSION, exportContractD } from "../src/contractD.js";
-
-const h = "sha256:" + "1".repeat(64);
-const rs = c => "result-set:" + c.repeat(64);
-
-const decisions = {
-  "source-audit-clear": {
-    input_authority: { kind: "contract-c", id: "c1", immutable_id: rs("a") },
-    policy: { id: "mainframe.source-audit", version: "1" },
-    target: { kind: "knowledge", id: "k1", content_sha256: h },
-    evaluation: { state: "completed", disposition: "clear" },
-    effect: { type: "knowledge.add_verified_tag", version: "1", params: { scope: "claim" } },
-    metadata: { reason_codes: ["policy_clear"] },
-  },
-  "citation-use-clear": {
-    input_authority: { kind: "contract-c", id: "c2", immutable_id: rs("b") },
-    policy: { id: "mainframe.citation-use", version: "1" },
-    target: { kind: "knowledge", id: "k2", content_sha256: h },
-    evaluation: { state: "completed", disposition: "clear" },
-    effect: { type: "knowledge.cite_as_evidence", version: "1" },
-  },
-  "task-dispatch-clear": {
-    input_authority: { kind: "task-review", id: "r1", immutable_id: "task-review:" + "c".repeat(64) },
-    policy: { id: "mainframe.task-dispatch", version: "1" },
-    target: { kind: "task", id: "t1", content_sha256: h },
-    evaluation: { state: "completed", disposition: "clear" },
-    effect: { type: "task.dispatch", version: "1" },
-  },
-  "completed-hold": {
-    input_authority: { kind: "contract-c", id: "c3", immutable_id: rs("d") },
-    policy: { id: "mainframe.source-audit", version: "1" },
-    target: { kind: "knowledge", id: "k3", content_sha256: h },
-    evaluation: { state: "completed", disposition: "hold" },
-    effect: { type: "knowledge.add_verified_tag", version: "1" },
-  },
-  "evaluation-failed": {
-    input_authority: { kind: "contract-c", id: "c4", immutable_id: rs("e") },
-    policy: { id: "mainframe.source-audit", version: "1" },
-    target: { kind: "knowledge", id: "k4", content_sha256: h },
-    evaluation: { state: "failed" },
-    metadata: { reason_codes: ["policy_evaluation_failure"] },
-  },
-};
+import { contractDDecisionStates as decisions } from "./fixtures/contractDDecisionStates.mjs";
 
 test("Contract D producer uses exact v1 identity", () => {
   assert.equal(CONTRACT_D_VERSION, "1.0.0");
@@ -100,5 +59,3 @@ test("producer requires the exact Decision binding families", () => {
     assert.throws(() => exportContractD(decision), /missing Decision field/);
   }
 });
-
-export { decisions };
