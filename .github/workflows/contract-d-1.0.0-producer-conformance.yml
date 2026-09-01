@@ -1,0 +1,89 @@
+name: Contract D 1.0.0 producer conformance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/contractD.js'
+      - 'tests/contractDProducer.test.mjs'
+      - 'tests/fixtures/contractDDecisionStates.mjs'
+      - 'scripts/emit-contract-d-v1-conformance.mjs'
+      - '.github/workflows/contract-d-1.0.0-producer-conformance.yml'
+  push:
+    branches:
+      - promotion/contract-d-1.0.0
+
+permissions:
+  contents: read
+
+jobs:
+  producer-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run bounded producer tests
+        run: node --test tests/contractDProducer.test.mjs
+
+  exact-apparatus-consumer:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine promotion head
+        uses: actions/checkout@v4
+      - name: Checkout exact Apparatus Contract D production merge
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 68d0cd82def0faaadd3ad5410fb40ec68675b8bd
+          path: _apparatus_contracts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install exact Apparatus production dependencies
+        run: python -m pip install --disable-pip-version-check -e './_apparatus_contracts[dev]'
+      - name: Emit Contract D v1 from Decision Engine
+        run: node scripts/emit-contract-d-v1-conformance.mjs > /tmp/contract-d-v1.json
+      - name: Consume exact producer output with Apparatus
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path('_apparatus_contracts').resolve()))
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import validate_decision
+
+          payload = json.loads(Path('/tmp/contract-d-v1.json').read_text())
+          expected_outcomes = {
+              'source-audit-clear': 'candidate_for_authorization',
+              'citation-use-clear': 'candidate_for_authorization',
+              'task-dispatch-clear': 'candidate_for_authorization',
+              'completed-hold': 'hold',
+              'evaluation-failed': 'evaluation_failed',
+          }
+          assert set(payload['decisions']) == set(expected_outcomes)
+          for name, decision in payload['decisions'].items():
+              validate_decision(decision)
+              requested_operation = decision.get('effect', {}).get('type', 'knowledge.add_verified_tag')
+              result = consume(
+                  decision,
+                  ApplicabilityExpectation(
+                      decision['input_authority'],
+                      decision['policy'],
+                      decision['target'],
+                      requested_operation,
+                      None,
+                  ),
+              )
+              assert result['outcome'] == expected_outcomes[name], (name, result)
+          PY
