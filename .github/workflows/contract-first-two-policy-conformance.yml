@@ -1,0 +1,263 @@
+name: Contract-first two-policy C to D conformance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/contractCIngress.js'
+      - 'src/contractCDecision.js'
+      - 'src/contractCBasisCitationDecision.js'
+      - 'src/contractD.js'
+      - 'tests/contractCToContractD.integration.mjs'
+      - 'tests/contractCBasisCitation.integration.mjs'
+      - '.github/workflows/contract-first-two-policy-conformance.yml'
+      - 'docs/DECISION_POLICY_SURFACE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_C_CANONICAL_SHA256: 7a66583e332be4901d13ba9f2d7e12419938c77a41b83223a4b0946ad529b7a1
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+
+jobs:
+  two-policy-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout frozen specimen-1 evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: _contract_c_rc1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact released validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './_contract_d[dev]'
+
+      - name: Verify exact released Contract C and D identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+          test "$(sha256sum _contract_c/fixtures/contract-c/1.0.0/valid-canonical.json | awk '{print $1}')" = "$CONTRACT_C_CANONICAL_SHA256"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+      - name: Verify common authority machinery is centralized, not semantic policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'loadExactContractCForDecision' src/contractCDecision.js
+          grep -q 'loadExactContractCForDecision' src/contractCBasisCitationDecision.js
+          ! grep -q 'spawnSync' src/contractCDecision.js
+          ! grep -q 'spawnSync' src/contractCBasisCitationDecision.js
+          grep -q 'spawnSync' src/contractCIngress.js
+          grep -q 'reported_verdict' src/contractCDecision.js
+          ! grep -q 'reported_verdict' src/contractCBasisCitationDecision.js
+          grep -q 'basis_members' src/contractCBasisCitationDecision.js
+
+      - name: Rerun maintained supported-claim policy regression
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          CONTRACT_C_TO_D_OUTPUT_DIR: ${{ github.workspace }}/build/specimen-1
+          PYTHON: python
+        run: node tests/contractCToContractD.integration.mjs
+
+      - name: Execute maintained causal-basis citation policy and falsifiers
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          CONTRACT_C_BASIS_CITATION_OUTPUT_DIR: ${{ github.workspace }}/build/specimen-2
+          PYTHON: python
+        run: node tests/contractCBasisCitation.integration.mjs
+
+      - name: Validate and consume both policy outputs under exact Contract D
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, semantic_identity, validate_decision
+
+          def load_dir(root, summary_name):
+              return {
+                  p.stem: json.loads(p.read_text())
+                  for p in Path(root).glob('*.json')
+                  if p.name != summary_name
+              }
+
+          specimen1 = load_dir('build/specimen-1', 'integration-summary.json')
+          specimen2 = load_dir('build/specimen-2', 'integration-summary.json')
+          assert set(specimen1) == {'clear', 'hold', 'failed', 'contextClear', 'contextHold'}
+          assert set(specimen2) == {'clear', 'hold', 'failed', 'ignoredState', 'incomplete', 'notAssessed'}
+
+          for decision in [*specimen1.values(), *specimen2.values()]:
+              validate_decision(decision)
+              canonical_json_bytes(decision)
+              semantic_identity(decision)
+
+          def expectation(decision, operation, params):
+              return ApplicabilityExpectation(
+                  copy.deepcopy(decision['input_authority']),
+                  copy.deepcopy(decision['policy']),
+                  copy.deepcopy(decision['target']),
+                  operation,
+                  copy.deepcopy(params),
+              )
+
+          s1_clear = specimen1['clear']
+          s1_hold = specimen1['hold']
+          s1_failed = specimen1['failed']
+          s1_expect = lambda d: expectation(d, 'knowledge.add_verified_tag', {'scope': 'claim'})
+          assert consume(s1_clear, s1_expect(s1_clear))['outcome'] == 'candidate_for_authorization'
+          assert consume(s1_hold, s1_expect(s1_hold))['outcome'] == 'hold'
+          assert consume(s1_failed, s1_expect(s1_failed))['outcome'] == 'evaluation_failed'
+
+          s2_clear = specimen2['clear']
+          s2_hold = specimen2['hold']
+          s2_failed = specimen2['failed']
+          s2_expect = lambda d: expectation(d, 'knowledge.cite_as_evidence', {})
+          assert consume(s2_clear, s2_expect(s2_clear))['outcome'] == 'candidate_for_authorization'
+          assert consume(s2_hold, s2_expect(s2_hold))['outcome'] == 'hold'
+          assert consume(s2_failed, s2_expect(s2_failed))['outcome'] == 'evaluation_failed'
+          assert consume(specimen2['ignoredState'], s2_expect(specimen2['ignoredState']))['outcome'] == 'candidate_for_authorization'
+          assert consume(specimen2['incomplete'], s2_expect(specimen2['incomplete']))['outcome'] == 'hold'
+          assert consume(specimen2['notAssessed'], s2_expect(specimen2['notAssessed']))['outcome'] == 'hold'
+
+          # Exact cross-policy/effect reuse is non-applicable.
+          assert consume(s1_clear, expectation(s1_clear, 'knowledge.cite_as_evidence', {}))['outcome'] == 'not_applicable'
+          assert consume(s2_clear, expectation(s2_clear, 'knowledge.add_verified_tag', {'scope': 'claim'}))['outcome'] == 'not_applicable'
+
+          # Same-id target content substitution remains non-applicable downstream.
+          wrong_target = ApplicabilityExpectation(
+              copy.deepcopy(s2_clear['input_authority']),
+              copy.deepcopy(s2_clear['policy']),
+              {**s2_clear['target'], 'content_sha256': 'sha256:' + '9' * 64},
+              'knowledge.cite_as_evidence',
+              {},
+          )
+          assert wrong_target.target['id'] == s2_clear['target']['id']
+          assert consume(s2_clear, wrong_target)['outcome'] == 'not_applicable'
+
+          # Effect substitution and illegal empty-schema parameter injection are caught.
+          effect_substitution = copy.deepcopy(s2_clear)
+          effect_substitution['effect'] = {'type': 'task.dispatch', 'version': '1', 'params': {}}
+          validate_decision(effect_substitution)
+          assert consume(effect_substitution, s2_expect(s2_clear))['outcome'] == 'not_applicable'
+
+          invalid_params = copy.deepcopy(s2_clear)
+          invalid_params['effect']['params'] = {'scope': 'claim'}
+          rejected = False
+          try:
+              validate_decision(invalid_params)
+          except Exception:
+              rejected = True
+          assert rejected
+
+          # Metadata remains non-authoritative.
+          metadata_only = copy.deepcopy(s2_clear)
+          metadata_only['metadata'] = {'reason_codes': ['changed'], 'diagnostics': {'ignored': True}}
+          validate_decision(metadata_only)
+          assert semantic_identity(metadata_only) == semantic_identity(s2_clear)
+
+          # Authorization firewall: neither policy can produce operational permission.
+          for clear, exp in [(s1_clear, s1_expect(s1_clear)), (s2_clear, s2_expect(s2_clear))]:
+              weak = 'authorized' if clear['evaluation'] == {'state': 'completed', 'disposition': 'clear'} else 'not_authorized'
+              assert weak == 'authorized'
+              canonical = consume(clear, exp)['outcome']
+              assert canonical == 'candidate_for_authorization'
+              assert canonical != weak
+
+          print(json.dumps({
+              'status': 'PASS',
+              'specimen_1_decisions': len(specimen1),
+              'specimen_2_decisions': len(specimen2),
+              'cross_policy_reuse': 'caught',
+              'target_content_substitution': 'caught',
+              'effect_substitution': 'caught',
+              'effect_parameter_substitution': 'caught',
+              'metadata_non_authoritative': True,
+              'authorization_firewall': True,
+          }))
+          PY
+
+      - name: Write two-policy conformance receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/two-policy-conformance
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          receipt = {
+              'status': 'PASS',
+              'candidate_head': '${{ github.sha }}',
+              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
+              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
+              'supported_claim_policy': 'decision-engine.contract-c.supported-claim-verification@1.0.0',
+              'causal_basis_citation_policy': 'decision-engine.contract-c.causal-basis-citation@1.0.0',
+              'shared_ingress': True,
+              'policy_semantics_kept_explicit': True,
+              'authorization_added': False,
+              'execution_added': False,
+          }
+          Path('build/two-policy-conformance/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Upload two-policy conformance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-first-two-policy-conformance
+          path: build
+          if-no-files-found: error
+          retention-days: 90
