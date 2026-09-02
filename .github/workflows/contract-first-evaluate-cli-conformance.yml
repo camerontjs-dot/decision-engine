@@ -1,0 +1,213 @@
+name: Contract-first Decision evaluate CLI conformance
+
+on:
+  pull_request:
+    paths:
+      - 'src/contractCDecisionRuntime.js'
+      - 'src/contractDCanonicalOutput.js'
+      - 'scripts/decision-engine-evaluate.mjs'
+      - 'tests/decisionEvaluateCli.integration.mjs'
+      - '.github/workflows/contract-first-evaluate-cli-conformance.yml'
+      - 'docs/DECISION_ENGINE_EVALUATE_CLI.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ENGINEERING_BASE: a29e21da6f9d8a67dcd0f2d5181f1ac526f835cc
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  CONTRACT_D_CORE_BLOB: 564dcde5677df5ac8f86f21dc0ffd1692f44c9f0
+  CONTRACT_D_EFFECT_REGISTRY_BLOB: a40f4f4447470654bdc16d852f5927189ae30cc5
+
+jobs:
+  evaluate-cli-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout frozen supported-claim evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: _contract_c_rc1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact Contract D validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './_contract_d[dev]'
+
+      - name: Verify exact authority and stacked scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d hash-object validators/contract_d_core.py)" = "$CONTRACT_D_CORE_BLOB"
+          test "$(git -C _contract_d hash-object schema/contract-d/1.0.0/effect-registry.json)" = "$CONTRACT_D_EFFECT_REGISTRY_BLOB"
+
+          git diff --exit-code "$ENGINEERING_BASE" -- \
+            src/contractCIngress.js \
+            src/contractCDecision.js \
+            src/contractCBasisCitationDecision.js \
+            tests/contractCToContractD.integration.mjs \
+            tests/contractCBasisCitation.integration.mjs \
+            .github/workflows/contract-first-two-policy-conformance.yml \
+            docs/DECISION_POLICY_SURFACE.md
+
+      - name: Rerun both policy implementations before CLI testing
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          CONTRACT_C_TO_D_OUTPUT_DIR: ${{ github.workspace }}/build/runtime-policy-1
+          CONTRACT_C_BASIS_CITATION_OUTPUT_DIR: ${{ github.workspace }}/build/runtime-policy-2
+          PYTHON: python
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/contractCToContractD.integration.mjs
+          node tests/contractCBasisCitation.integration.mjs
+
+      - name: Exercise library dispatch and fail-closed CLI
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          DECISION_EVALUATE_CLI_OUTPUT_DIR: ${{ github.workspace }}/build/evaluate-cli
+          PYTHON: python
+        run: node tests/decisionEvaluateCli.integration.mjs
+
+      - name: Independently consume canonical CLI outputs with exact Contract D
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, validate_decision
+
+          root = Path('build/evaluate-cli')
+          expected = {
+              'basis-clear.contract-d.json': ('candidate_for_authorization', 'knowledge.cite_as_evidence', {}),
+              'basis-hold.contract-d.json': ('hold', 'knowledge.cite_as_evidence', {}),
+              'basis-failed.contract-d.json': ('evaluation_failed', 'knowledge.cite_as_evidence', {}),
+              'supported-clear.contract-d.json': ('candidate_for_authorization', 'knowledge.add_verified_tag', {'scope': 'claim'}),
+          }
+          for name, (outcome, operation, params) in expected.items():
+              raw = (root / name).read_bytes()
+              decision = json.loads(raw)
+              validate_decision(decision)
+              assert canonical_json_bytes(decision) == raw, name
+              expectation = ApplicabilityExpectation(
+                  decision['input_authority'],
+                  decision['policy'],
+                  decision['target'],
+                  operation,
+                  params,
+              )
+              assert consume(decision, expectation)['outcome'] == outcome, name
+
+          # CLEAR remains downstream-candidate state only.
+          for name in ['basis-clear.contract-d.json', 'supported-clear.contract-d.json']:
+              decision = json.loads((root / name).read_bytes())
+              assert decision['evaluation'] == {'state': 'completed', 'disposition': 'clear'}
+              assert 'authorization' not in decision
+              assert 'execution' not in decision
+
+          print(json.dumps({
+              'status': 'PASS',
+              'canonical_cli_outputs': len(expected),
+              'independent_consumer_applicability': True,
+              'authorization_absent': True,
+              'execution_absent': True,
+          }))
+          PY
+
+      - name: Verify invocation performed no tracked mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          git -C _contract_c diff --exit-code
+          git -C _contract_d diff --exit-code
+          git -C _contract_c_rc1 diff --exit-code
+
+      - name: Write invocation-surface receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/evaluate-cli-receipt
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(Path('build/evaluate-cli/integration-summary.json').read_text())
+          receipt = {
+              'status': 'PASS',
+              'candidate_head': '${{ github.sha }}',
+              'engineering_base': 'a29e21da6f9d8a67dcd0f2d5181f1ac526f835cc',
+              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
+              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
+              'cli_matrix': summary,
+              'canonical_contract_d_stdout': True,
+              'downstream_consumer_checked': True,
+              'tracked_mutation': False,
+              'authorization_added': False,
+              'execution_added': False,
+          }
+          Path('build/evaluate-cli-receipt/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Upload invocation-surface evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-first-decision-evaluate-cli
+          path: |
+            build/evaluate-cli
+            build/evaluate-cli-receipt
+          if-no-files-found: error
+          retention-days: 90
