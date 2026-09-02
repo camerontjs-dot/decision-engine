@@ -1,0 +1,259 @@
+name: Contract-first policy specimen #2 research
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/contract-first-policy-2/**'
+      - '.github/workflows/contract-first-policy-2-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DECISION_ENGINE_BASE: 9f5ffc04a0184abe44dc49509058a7ff88893e30
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_C_CANONICAL_SHA256: 7a66583e332be4901d13ba9f2d7e12419938c77a41b83223a4b0946ad529b7a1
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+
+jobs:
+  policy-2-research:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine research candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout frozen specimen-1 regression evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: _contract_c_rc1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact released validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './_contract_d[dev]'
+
+      - name: Verify exact authority identities and preserved specimen #1
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+          test "$(sha256sum _contract_c/fixtures/contract-c/1.0.0/valid-canonical.json | awk '{print $1}')" = "$CONTRACT_C_CANONICAL_SHA256"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+          git diff --exit-code "$DECISION_ENGINE_BASE" -- src/contractCDecision.js src/contractD.js
+
+      - name: Execute preregistered policy-2 fixture matrix and falsifiers
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          POLICY_2_OUTPUT_DIR: ${{ github.workspace }}/build/contract-first-policy-2
+          PYTHON: python
+        run: node research/contract-first-policy-2/validate.mjs
+
+      - name: Validate, consume, and attack emitted policy-2 Decisions with exact Contract D
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, semantic_identity, validate_decision
+
+          root = Path('build/contract-first-policy-2')
+          decisions = {
+              p.stem: json.loads(p.read_text())
+              for p in root.glob('*.json')
+              if p.name != 'research-summary.json'
+          }
+          expected_names = {'clear', 'hold', 'failed', 'ignoredState', 'incomplete', 'notAssessed'}
+          assert set(decisions) == expected_names, set(decisions)
+
+          for decision in decisions.values():
+              validate_decision(decision)
+              canonical_json_bytes(decision)
+              semantic_identity(decision)
+
+          def expectation(decision, *, operation='knowledge.cite_as_evidence', params=None):
+              return ApplicabilityExpectation(
+                  copy.deepcopy(decision['input_authority']),
+                  copy.deepcopy(decision['policy']),
+                  copy.deepcopy(decision['target']),
+                  operation,
+                  {} if params is None else params,
+              )
+
+          clear = decisions['clear']
+          hold = decisions['hold']
+          failed = decisions['failed']
+          assert consume(clear, expectation(clear))['outcome'] == 'candidate_for_authorization'
+          assert consume(hold, expectation(hold))['outcome'] == 'hold'
+          assert consume(failed, expectation(failed))['outcome'] == 'evaluation_failed'
+          assert consume(decisions['ignoredState'], expectation(decisions['ignoredState']))['outcome'] == 'candidate_for_authorization'
+          assert consume(decisions['incomplete'], expectation(decisions['incomplete']))['outcome'] == 'hold'
+          assert consume(decisions['notAssessed'], expectation(decisions['notAssessed']))['outcome'] == 'hold'
+
+          base_expected = expectation(clear)
+          wrong_input = ApplicabilityExpectation(
+              {**base_expected.input_authority, 'immutable_id': 'sha256:' + '0' * 64},
+              base_expected.policy,
+              base_expected.target,
+              base_expected.requested_operation,
+              base_expected.effect_params,
+          )
+          assert consume(clear, wrong_input)['outcome'] == 'not_applicable'
+
+          wrong_policy = ApplicabilityExpectation(
+              base_expected.input_authority,
+              {**base_expected.policy, 'version': '1.0.1'},
+              base_expected.target,
+              base_expected.requested_operation,
+              base_expected.effect_params,
+          )
+          assert consume(clear, wrong_policy)['outcome'] == 'not_applicable'
+
+          wrong_target = ApplicabilityExpectation(
+              base_expected.input_authority,
+              base_expected.policy,
+              {**base_expected.target, 'content_sha256': 'sha256:' + '9' * 64},
+              base_expected.requested_operation,
+              base_expected.effect_params,
+          )
+          assert wrong_target.target['id'] == base_expected.target['id']
+          assert consume(clear, wrong_target)['outcome'] == 'not_applicable'
+
+          add_tag_cross_use = expectation(clear, operation='knowledge.add_verified_tag', params={})
+          dispatch_cross_use = expectation(clear, operation='task.dispatch', params={})
+          assert consume(clear, add_tag_cross_use)['outcome'] == 'not_applicable'
+          assert consume(clear, dispatch_cross_use)['outcome'] == 'not_applicable'
+
+          effect_substitution = copy.deepcopy(clear)
+          effect_substitution['effect'] = {'type': 'task.dispatch', 'version': '1', 'params': {}}
+          validate_decision(effect_substitution)
+          assert consume(effect_substitution, base_expected)['outcome'] == 'not_applicable'
+
+          parameter_substitution = copy.deepcopy(clear)
+          parameter_substitution['effect']['params'] = {'scope': 'claim'}
+          parameter_rejected = False
+          try:
+              validate_decision(parameter_substitution)
+          except Exception:
+              parameter_rejected = True
+          assert parameter_rejected, 'empty-schema citation effect accepted substituted parameter'
+
+          metadata_only = copy.deepcopy(clear)
+          metadata_only['metadata'] = {
+              'reason_codes': ['changed_diagnostic'],
+              'diagnostics': {'ignored': True},
+          }
+          validate_decision(metadata_only)
+          assert semantic_identity(metadata_only) == semantic_identity(clear)
+
+          weak_authorization = 'authorized' if clear['evaluation'] == {'state': 'completed', 'disposition': 'clear'} else 'not_authorized'
+          assert weak_authorization == 'authorized'
+          canonical_outcome = consume(clear, base_expected)['outcome']
+          assert canonical_outcome == 'candidate_for_authorization'
+          assert canonical_outcome != weak_authorization
+
+          print(json.dumps({
+              'status': 'PASS',
+              'decisions_validated': len(decisions),
+              'clear_outcome': canonical_outcome,
+              'hold_outcome': consume(hold, expectation(hold))['outcome'],
+              'failed_outcome': consume(failed, expectation(failed))['outcome'],
+              'input_substitution': 'caught',
+              'policy_substitution': 'caught',
+              'target_same_id_content_substitution': 'caught',
+              'effect_substitution': 'caught',
+              'effect_parameter_substitution': 'caught',
+              'metadata_non_authoritative': True,
+              'authorization_firewall': 'caught',
+          }))
+          PY
+
+      - name: Rerun maintained policy specimen #1 regression
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          CONTRACT_C_TO_D_OUTPUT_DIR: ${{ github.workspace }}/build/specimen-1-regression
+          PYTHON: python
+        run: node tests/contractCToContractD.integration.mjs
+
+      - name: Write research receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(Path('build/contract-first-policy-2/research-summary.json').read_text())
+          receipt = {
+              'status': 'PASS',
+              'decision_engine_base': '9f5ffc04a0184abe44dc49509058a7ff88893e30',
+              'candidate_head': '${{ github.sha }}',
+              'contract_c_release': '5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1',
+              'contract_d_release': '298a1a0f7b7b6d7712e11200d04faec3e1ca169b',
+              'policy': summary['policy'],
+              'policy_2_matrix': summary,
+              'specimen_1_regression': 'PASS',
+              'authorization_added': False,
+              'execution_added': False,
+              'upstream_reachability_claimed': False,
+          }
+          Path('build/contract-first-policy-2/research-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Upload research evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-first-policy-2-research
+          path: |
+            build/contract-first-policy-2
+            build/specimen-1-regression
+          if-no-files-found: error
+          retention-days: 90
