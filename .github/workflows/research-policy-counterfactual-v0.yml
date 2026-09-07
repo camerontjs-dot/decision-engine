@@ -1,0 +1,27 @@
+name: Research - Policy Counterfactual v0
+
+on:
+  pull_request:
+    paths:
+      - "research/policy-counterfactual-v0/**"
+      - "src/gate/gateHead.js"
+      - ".github/workflows/research-policy-counterfactual-v0.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  policy-counterfactual-v0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run policy counterfactual tests
+        run: node --test research/policy-counterfactual-v0/policyCounterfactual.test.mjs
+      - name: Run policy counterfactual demo
+        run: node research/policy-counterfactual-v0/run-demo.mjs
