@@ -25,6 +25,10 @@ function sha256(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
+function policyIdentity(policy) {
+  return { id: policy.id, version: policy.version };
+}
+
 function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -85,7 +89,7 @@ for (const child of children) {
   );
 
   const claimContext = {
-    policy: SUPPORTED_CLAIM_VERIFICATION_POLICY,
+    policy: policyIdentity(SUPPORTED_CLAIM_VERIFICATION_POLICY),
     proposition_id: child.proposition_id,
     target: {
       kind: "claim",
@@ -119,7 +123,7 @@ for (const child of children) {
   const citationTarget = citationTargetForContractC(contractC, child.proposition_id, contributionId);
   expect(citationTarget, `could not derive citation target for ${child.proposition_id}`);
   const citationContext = {
-    policy: CAUSAL_BASIS_CITATION_POLICY,
+    policy: policyIdentity(CAUSAL_BASIS_CITATION_POLICY),
     proposition_id: child.proposition_id,
     contribution_id: contributionId,
     target: citationTarget,
