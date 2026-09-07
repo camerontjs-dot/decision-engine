@@ -228,7 +228,6 @@ expect(
 );
 canonicalizeContractDWithAuthority({ decision: crossCitationDecision, contractDAuthorityRoot });
 
-// Independently exercise the maintained CLI against the first fresh CAL output.
 const scratch = mkdtempSync(join(tmpdir(), "de-cal-real-"));
 const expectedBPath = join(scratch, "expected-b.json");
 const contextPath = join(scratch, "context.json");
@@ -257,12 +256,12 @@ expect(cliDecision.evaluation?.disposition === "clear", "maintained CLI did not 
 
 const result = {
   schema: "decision-engine-cal-real-output-pressure-test-v1",
-  decision_engine_head: process.env.GITHUB_SHA ?? null,
+  decision_engine_head: process.env.DECISION_ENGINE_RESEARCH_HEAD ?? null,
   upstream: {
     cal_head: process.env.CAL_HEAD ?? null,
     pipeline_status: receipt.pipeline_status,
     contract_b: expectedContractB,
-    contract_c_authority: receipt.authorities?.contract_c_authority ?? null,
+    contract_c_authority: receipt.pins?.contract_c_authority ?? null,
   },
   observed: {
     child_count: children.length,
