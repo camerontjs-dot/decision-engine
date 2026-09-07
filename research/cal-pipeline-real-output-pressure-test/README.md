@@ -31,43 +31,98 @@ Exact external heads:
 
 Can the maintained Decision Engine consume real, freshly generated CAL Pipeline Contract C outputs through the exact authority boundary and produce valid canonical Contract D for both maintained policies, while refusing obvious authority, binding, and cross-output replay mutations?
 
-This is deliberately narrower than asking whether the whole CAL Pipeline is correct.
+## Decisive result
 
-## Preregistered observations
+**SUPPORTED_WITH_BOUNDS** for this exact real-output interoperability slice.
 
-For each upstream child that CAL reports as a completed assessed `supported` proposition with one causal-basis contribution:
+Decisive Decision Engine head: `3e45b721827515187ea6de9243ace85a65599921`
 
-1. `decision-engine.contract-c.supported-claim-verification@1.0.0` should produce `completed / clear` with `knowledge.add_verified_tag@1(scope=claim)`.
-2. `decision-engine.contract-c.causal-basis-citation@1.0.0` should produce `completed / clear` for the exact causal-basis contribution with `knowledge.cite_as_evidence@1`.
-3. Both outputs must canonicalize successfully under exact Contract D 1.0 authority.
-4. The maintained exact-authority CLI should consume the same fresh Contract C bytes and agree with the programmatic supported-claim path.
+GitHub-hosted run: `34171780593`
 
-## Falsifiers / negative controls
+Job: `101893314935`
 
-The experiment fails if any of the following occurs:
+Artifact: `cal-de-real-output-pressure-34171780593`
 
-- a fresh upstream Contract C object cannot pass maintained Decision ingress despite upstream exact Contract C validation;
-- a supported upstream child does not CLEAR under the maintained supported-claim policy;
-- its exact causal-basis contribution does not CLEAR under the maintained citation policy;
-- emitted Decision output fails exact Contract D canonical validation;
-- wrong whole-object Contract C SHA-256 does not fail closed;
-- wrong expected Contract B binding does not fail closed;
-- wrong claim target content hash does not fail closed;
-- replaying another fresh child target against the first Contract C yields CLEAR;
-- replaying another fresh child's citation target against the first Contract C yields CLEAR;
-- maintained CLI cannot reproduce the programmatic supported-claim result.
+Artifact ID: `10035941867`
 
-## Interpretation boundary
+Artifact ZIP digest: `sha256:1ed05eb4353405ba6422b3fe410d82de9d5e125c63ff83c5a9d84fb050d208ec`
 
-A passing run would establish only that the current maintained Decision surfaces are interoperable with this exact real CAL Pipeline RC0 output family and preserve the tested fail-closed bindings.
+The run regenerated the exact upstream pipeline successfully, then consumed the resulting Contract C bytes through maintained Decision Engine ingress.
 
-It would not establish:
+### Fresh child 1
+
+- proposition: `PIPELINE_SMOKE_001:child:1`
+- Contract C whole-object digest: `sha256:c599e97fd5b4da80ae558d5d57a351fa3b2d37081432013a9dbeaae65a80b5a3`
+- supported-claim policy: `completed / clear`
+- effect: `knowledge.add_verified_tag@1(scope=claim)`
+- reason: `contract_c_supported`
+- canonical Contract D digest: `sha256:db47ebc844c14aa28bbc02524684b1ea7e388e1f1eea7ee8cbc7153af7548200`
+- causal-basis citation policy: `completed / clear`
+- effect: `knowledge.cite_as_evidence@1`
+- reason: `contract_c_contribution_in_causal_basis`
+- canonical Contract D digest: `sha256:1f2ddf98a05d5772833984c3747e6cfda5ef7448d5580a73e077897e60cdfa5b`
+
+### Fresh child 2
+
+- proposition: `PIPELINE_SMOKE_001:child:2`
+- Contract C whole-object digest: `sha256:8ae6759e52d2de69572594b31dce7562808786dc75dcc26d2b7bff74c4edb765`
+- supported-claim policy: `completed / clear`
+- effect: `knowledge.add_verified_tag@1(scope=claim)`
+- reason: `contract_c_supported`
+- canonical Contract D digest: `sha256:86be4b26ea9718e24fa2d185b70d95ba3f58d2905f24b4288839c6753683a750`
+- causal-basis citation policy: `completed / clear`
+- effect: `knowledge.cite_as_evidence@1`
+- reason: `contract_c_contribution_in_causal_basis`
+- canonical Contract D digest: `sha256:f1dd833b7390d2863cc44c2680dc0b75a602d78c13b5a82327d4bd632d768aa9`
+
+### Fail-closed controls
+
+For both fresh Contract C objects:
+
+- wrong whole-object Contract C digest -> `contract_c_whole_object_mismatch`
+- wrong expected Contract B binding -> `contract_b_binding_mismatch`
+- wrong claim target content digest -> `target_binding_mismatch`
+
+Cross-child replay controls also stayed closed:
+
+- child-2 claim target against child-1 Contract C -> `failed`, `target_proposition_not_found`, no effect
+- child-2 citation target against child-1 Contract C -> `failed`, `target_proposition_not_found`, no effect
+
+The maintained exact-authority CLI independently reproduced `clear` for the first supported-claim case.
+
+The workflow's maintained-source mutation guard passed. No `src/**` or `scripts/**` change was needed to obtain the result.
+
+## Preserved apparatus deviations
+
+The path to the decisive result includes three failed research-harness runs. They are retained as evidence rather than rewritten away.
+
+1. Run `34171468257`: CAL regenerated successfully, but the workflow attempted to `tee` into a missing top-level `build/` directory under `pipefail`. This was a harness filesystem failure before Decision evaluation.
+2. Run `34171587233`: the harness passed the full exported policy descriptor into `decisionContext.policy`; the maintained runtime correctly rejected it because the public context accepts exactly `{id, version}`. The harness was narrowed to that exact public shape.
+3. Run `34171677438`: CAL again regenerated exact valid Contract C objects, but Decision Engine's independent released Contract C validator ran under global `python3` without the validator package's declared Pydantic dependency. The experiment environment was provisioned with the released apparatus dependency set. Validation was not bypassed.
+
+## Bounded interpretation
+
+Observed evidence supports a narrow interoperability claim: for these two fresh, valid, CAL-produced `assessed / supported` Contract C objects, both maintained Decision Engine policies consume the exact upstream bytes, emit canonical Contract D, and preserve the tested binding and replay protections.
+
+This does not establish:
 
 - CAL semantic correctness beyond the upstream bounded evidence;
 - source legitimacy or corpus completeness;
 - reachability of all valid Contract C states;
+- correctness of Decision behavior on contradicted, not-checkable, mixed, or otherwise non-supported valid Contract C states;
 - a general Decision policy framework;
 - a generalized Contract C policy-counterfactual architecture;
 - operational Authorization or execution.
 
-If this passes, the next useful Decision Engine test is to obtain or generate **valid upstream Contract C HOLD states** rather than manufacturing invalid Contract C mutations. That would test the maintained policy boundary over real semantic variation instead of only positive reachability and binding safety.
+## Next discriminating Decision test
+
+The strongest next slice is valid semantic variation produced by CAL itself, not hand-edited Contract C.
+
+Use the same admitted evidence for child 1 (`Women trailed Men...`) but supply the opposite strict-comparison target through the CAL input surface. If the frozen CAL machinery produces a valid `assessed / contradicted` Contract C object, run that object through both maintained policies.
+
+That should discriminate policy semantics rather than merely repeat positive interoperability:
+
+- supported-claim verification is expected to HOLD because the reported verdict is not `supported`;
+- causal-basis citation may still CLEAR the exact deciding contribution if that contribution remains in the causal basis of the contradiction.
+
+Those expectations are hypotheses for the successor experiment, not conclusions from this run.
