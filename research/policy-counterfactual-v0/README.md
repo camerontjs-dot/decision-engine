@@ -66,14 +66,25 @@ node --test research/policy-counterfactual-v0/policyCounterfactual.test.mjs
 node research/policy-counterfactual-v0/run-demo.mjs
 ```
 
-## First observed execution
+## Observed execution
 
-Environment: Node `v22.16.0`.
+The first local development execution passed 10/10 tests. The exact GitHub-hosted research code/test head `9a7ab0f9bc75c4250bb0f78ac631f9854c3b35be` then passed 12/12 tests in workflow run `34167981911` on Node `v22.23.2`. The full maintained regression/hygiene workflow run `34167981931` also passed.
 
-The first local execution on 2026-09-07 passed 10/10 tests. The demo baseline was `hold` and classified:
+The demo baseline was `hold` and classified:
 
 - `evidence-status` -> `decision-critical` (`pass -> promote`, `fail -> reject`);
 - `documentation-status` -> `decision-invariant`;
 - `retention-status` -> `policy-mandatory`, with decision impact still `invariant`.
 
-This establishes only the behavior of this research apparatus against the demonstrated Gate fixture. It does not establish that the abstraction belongs in maintained Decision Engine code, that every Decision head can use the same mechanism, or that a Workflow Advisor should act on the classification.
+The two additional GitHub-hosted tests exercised the maintained `NOTE_PROMOTION_BAR` rather than only the synthetic research bar:
+
+- unresolved source resolution was decision-critical for the exact test note: resolving all cited sources moved `hold -> promote`, while a dangling source moved `hold -> reject`;
+- changing only the advisory purpose-field input changed its criterion receipt but left `promote` unchanged, so that patch was decision-invariant.
+
+See `TEST_RECEIPT.md` for exact run and scope details.
+
+## Bounded interpretation
+
+This establishes the demonstrated behavior of the research apparatus on the Gate abstraction and one maintained Gate policy. It supports the claim that deterministic policy replay can expose decision sensitivity without manufacturing a world counterfactual.
+
+It does not establish that the abstraction belongs in maintained Decision Engine code, that every Decision head can use the same mechanism, or that a Workflow Advisor should act on the classification. A broader claim across the maintained Contract C -> Decision -> Contract D head requires its own authority-aware experiment.
