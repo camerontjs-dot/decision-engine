@@ -84,6 +84,15 @@ jobs:
           test "$(git -C _deps/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_HEAD"
           test "$(git -C _deps/apparatus-d rev-parse HEAD)" = "$CONTRACT_D_HEAD"
 
+      - name: Install released contract validator runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install \
+            "PyYAML>=6.0,<7" \
+            "pydantic>=2.6,<3" \
+            "rfc8785==0.1.4"
+
       - name: Install exact CAL integration dependencies
         shell: bash
         run: |
