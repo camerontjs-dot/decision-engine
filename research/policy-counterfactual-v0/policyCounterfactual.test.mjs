@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { DECISION, OUTCOME, SEVERITY, defineBar } from "../../src/gate/gateHead.js";
+import { NOTE_PROMOTION_BAR, parseNoteToGateItem } from "../../src/gate/notePromotionBar.js";
 import {
   classifyGateUnknownCandidate,
   classifyGateUnknowns,
@@ -53,6 +54,29 @@ const ITEM = Object.freeze({
   documentationStatus: "unknown",
   retentionStatus: "unknown",
 });
+
+const STABLE_NOTE = `---
+type: "note"
+domain: "ui-design"
+status: "stable"
+links:
+  - raw-a.md
+  - raw-b.md
+---
+
+# A Title
+
+## Decision Supported
+Pick a menu paradigm.
+
+**1. First point**
+[source-claim / high-confidence] Menus can be categorised by diegesis.
+*Evidence:* \`raw-a.md\`
+
+**2. Second point**
+[source-claim / medium-confidence] Inventories map to three paradigms.
+*Evidence:* \`raw-b.md\`
+`;
 
 test("policy counterfactual replays the same bar with one explicit patch", () => {
   const result = evaluateGatePolicyCounterfactual({
@@ -190,4 +214,49 @@ test("prototype-pollution paths fail closed", () => {
     /unsafe patch path segment/,
   );
   assert.equal({}.polluted, undefined);
+});
+
+test("the maintained note-promotion Gate exposes unresolved evidence resolution as decision-critical", () => {
+  const item = parseNoteToGateItem("stable-note", STABLE_NOTE);
+  assert.equal(item.resolutions, null);
+
+  const result = classifyGateUnknownCandidate({
+    item,
+    bar: NOTE_PROMOTION_BAR,
+    candidate: {
+      id: "source-resolution",
+      path: ["resolutions"],
+      admissibleValues: [
+        {
+          "raw-a.md": { exists: true, quarantined: false },
+          "raw-b.md": { exists: true, quarantined: false },
+        },
+        {
+          "raw-a.md": { exists: true, quarantined: false },
+          "raw-b.md": { exists: false, quarantined: false },
+        },
+      ],
+    },
+  });
+
+  assert.equal(result.baseline_decision, DECISION.HOLD);
+  assert.equal(result.decision_impact, "critical");
+  assert.equal(result.routing_class, "decision-critical");
+  assert.deepEqual(result.changing_values.map((x) => x.decision), [DECISION.PROMOTE, DECISION.REJECT]);
+});
+
+test("the maintained note-promotion Gate keeps an advisory purpose-field patch decision-invariant", () => {
+  const item = parseNoteToGateItem("stable-note", STABLE_NOTE, () => ({ exists: true, quarantined: false }));
+  const result = evaluateGatePolicyCounterfactual({
+    item,
+    bar: NOTE_PROMOTION_BAR,
+    patch: { path: ["hasPurposeSection"], value: false },
+  });
+
+  assert.equal(result.baseline.decision, DECISION.PROMOTE);
+  assert.equal(result.counterfactual.decision, DECISION.PROMOTE);
+  assert.equal(result.recommendation_changed, false);
+  assert.deepEqual(result.changed_criteria, [
+    { id: "states-its-purpose", before: OUTCOME.PASS, after: OUTCOME.FAIL },
+  ]);
 });
