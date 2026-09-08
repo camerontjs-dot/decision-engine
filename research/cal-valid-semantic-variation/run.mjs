@@ -90,7 +90,7 @@ expect(basisMembers.length === 1, `expected exactly one deciding contribution, g
 const contributionId = basisMembers[0].id;
 const contribution = proposition.contributions.find((row) => row.contribution_id === contributionId);
 expect(contribution, "deciding contribution missing");
-expect(contribution.channel === "refutation", `expected refutation contribution channel, got ${contribution.channel}`);
+expect(contribution.channel === "counterevidence", `expected Contract C counterevidence channel, got ${contribution.channel}`);
 const citationTarget = citationTargetForContractC(contractC, child.proposition_id, contributionId);
 expect(citationTarget, "could not derive citation target");
 
