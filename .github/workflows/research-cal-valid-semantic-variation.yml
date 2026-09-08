@@ -1,0 +1,169 @@
+name: Research - CAL valid semantic variation
+
+on:
+  push:
+    branches:
+      - research/cal-valid-semantic-variation-20260907
+  pull_request:
+    paths:
+      - "research/cal-valid-semantic-variation/**"
+      - ".github/workflows/research-cal-valid-semantic-variation.yml"
+      - "src/contractC*.js"
+      - "src/contractD*.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CAL_HEAD: 4b9d69936d8ecdbaac0217561be7a3a821b70522
+  EB_HEAD: 50270b9bfcf6b5112c6ec88c02c7cdd7215e0ff4
+  RC7FB1_HEAD: 0ecdedc5cea970485a635508255f3670ab231c33
+  RC8J_HEAD: 8e75c6782bb95c3763d06230b9c5df2b6af44054
+  CONTRACT_B_HEAD: c314e53bd91c0736aa4370a364673b069aceb43e
+  CONTRACT_C_HEAD: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_D_HEAD: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  DECISION_ENGINE_RESEARCH_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  semantic-variation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify exact Decision research head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$DECISION_ENGINE_RESEARCH_HEAD"
+
+      - name: Checkout exact upstream and contract authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/cal
+          git -C _deps/cal checkout "$CAL_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/evidence-bundler.git _deps/evidence-bundler
+          git -C _deps/evidence-bundler checkout "$EB_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/rc7fb1
+          git -C _deps/rc7fb1 checkout "$RC7FB1_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/rc8j
+          git -C _deps/rc8j checkout "$RC8J_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-b
+          git -C _deps/apparatus-b checkout "$CONTRACT_B_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-c
+          git -C _deps/apparatus-c checkout "$CONTRACT_C_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-d
+          git -C _deps/apparatus-d checkout "$CONTRACT_D_HEAD"
+          test "$(git -C _deps/cal rev-parse HEAD)" = "$CAL_HEAD"
+          test "$(git -C _deps/evidence-bundler rev-parse HEAD)" = "$EB_HEAD"
+          test "$(git -C _deps/rc7fb1 rev-parse HEAD)" = "$RC7FB1_HEAD"
+          test "$(git -C _deps/rc8j rev-parse HEAD)" = "$RC8J_HEAD"
+          test "$(git -C _deps/apparatus-b rev-parse HEAD)" = "$CONTRACT_B_HEAD"
+          test "$(git -C _deps/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_HEAD"
+          test "$(git -C _deps/apparatus-d rev-parse HEAD)" = "$CONTRACT_D_HEAD"
+
+      - name: Install released contract validator runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install \
+            "PyYAML>=6.0,<7" \
+            "pydantic>=2.6,<3" \
+            "rfc8785==0.1.4"
+
+      - name: Install exact CAL integration dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _deps/cal
+          uv sync
+          uv pip install --python .venv/bin/python -e ../evidence-bundler
+
+      - name: Construct one controlled valid CAL target variation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          source = Path('_deps/cal/pipeline/cal_rc0/fixtures/cal_targets.json')
+          target = Path('build/cal_targets_opposite_child1.json')
+          payload = json.loads(source.read_text())
+          row = next(x for x in payload['targets'] if x['proposition_id'] == 'PIPELINE_SMOKE_001:child:1')
+          assert row['comparison_direction'] == 'less_than'
+          row['comparison_direction'] = 'greater_than'
+          target.write_text(json.dumps(payload, sort_keys=True, separators=(',', ':')) + '\n')
+          PY
+
+      - name: Regenerate CAL Pipeline with controlled target variation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _deps/cal
+          uv run python pipeline/cal_rc0/entity_scoped_entrypoint.py \
+            --cal-root . \
+            --cal-head "$CAL_HEAD" \
+            --evidence-bundler-root "$GITHUB_WORKSPACE/_deps/evidence-bundler" \
+            --rc7fb1-root "$GITHUB_WORKSPACE/_deps/rc7fb1" \
+            --rc8j-root "$GITHUB_WORKSPACE/_deps/rc8j" \
+            --apparatus-b "$GITHUB_WORKSPACE/_deps/apparatus-b" \
+            --apparatus-c "$GITHUB_WORKSPACE/_deps/apparatus-c" \
+            --cohort pipeline/cal_rc0/fixtures/cohort.json \
+            --admission pipeline/cal_rc0/fixtures/admission.json \
+            --targets "$GITHUB_WORKSPACE/build/cal_targets_opposite_child1.json" \
+            --eb-profile pipeline/cal_rc0/eb_profile.json \
+            --semantic-implementation-sha "$CAL_HEAD" \
+            --test-keys \
+            --out-dir "$GITHUB_WORKSPACE/build/cal-pipeline-variant" \
+            | tee "$GITHUB_WORKSPACE/build/CAL-VARIANT-STDOUT.json"
+
+      - name: Test Decision policy discrimination on valid contradicted output
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/cal-valid-semantic-variation/run.mjs \
+            --pipeline-out build/cal-pipeline-variant \
+            --contract-c-authority _deps/apparatus-c \
+            --contract-d-authority _deps/apparatus-d \
+            | tee build/DECISION-SEMANTIC-VARIATION-RECEIPT.json
+
+      - name: Assert no maintained source mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --name-only a4425f8eb47449ff6c683222921bbea9483742e2...HEAD -- src/ scripts/ | grep -q .; then
+            echo "research branch modified maintained Decision source" >&2
+            exit 1
+          fi
+
+      - name: Pack receipts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -d build; then tar -czf CAL-DE-SEMANTIC-VARIATION-RECEIPTS.tgz build; fi
+
+      - name: Upload receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cal-de-semantic-variation-${{ github.run_id }}
+          path: CAL-DE-SEMANTIC-VARIATION-RECEIPTS.tgz
+          if-no-files-found: warn
+          retention-days: 90
