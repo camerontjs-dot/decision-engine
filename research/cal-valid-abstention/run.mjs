@@ -31,7 +31,10 @@ const child = receipt.cal.children.find((row) => row.proposition_id === "PIPELIN
 expect(child, "child 1 missing");
 expect(child.contract_c_validation.status === "PASS", "Contract C validation did not PASS");
 expect(child.internal_cal_conclusion.disposition === "abstained", `expected CAL abstained, got ${child.internal_cal_conclusion.disposition}`);
-expect(child.internal_cal_conclusion.verdict === "not_checkable", `expected not_checkable, got ${child.internal_cal_conclusion.verdict}`);
+expect(child.internal_cal_conclusion.verdict === null, `expected null internal verdict for abstention, got ${child.internal_cal_conclusion.verdict}`);
+expect(child.internal_cal_conclusion.reason_code === "unresolved_categorical_relation", `unexpected internal abstention reason ${child.internal_cal_conclusion.reason_code}`);
+expect(child.contract_c_projection.contract_c_completion === "not_checkable", `expected Contract C projection completion not_checkable, got ${child.contract_c_projection.contract_c_completion}`);
+expect(child.contract_c_projection.contract_c_reported_verdict === "not_checkable", `expected Contract C projection verdict not_checkable, got ${child.contract_c_projection.contract_c_reported_verdict}`);
 
 const expectedContractB = {
   contract_version: receipt.contract_b.validation.contract_version,
@@ -44,6 +47,8 @@ const contractC = JSON.parse(contractCBytes.toString("utf8"));
 const exactContractCSha256 = sha256(contractCBytes);
 const proposition = contractC.propositions.find((row) => row.proposition.proposition_id === child.proposition_id);
 expect(proposition, "Contract C proposition missing");
+expect(proposition.execution.state === "completed", `expected completed Contract C proposition, got ${proposition.execution.state}`);
+expect(proposition.execution.completion === "not_checkable", `expected Contract C completion not_checkable, got ${proposition.execution.completion}`);
 expect(proposition.conclusion.reported_verdict === "not_checkable", `expected Contract C not_checkable, got ${proposition.conclusion.reported_verdict}`);
 
 const claimDecision = evaluateContractCDecision({
@@ -64,7 +69,7 @@ const claimDecision = evaluateContractCDecision({
 expect(claimDecision.evaluation.state === "completed", `expected completed Decision evaluation, got ${claimDecision.evaluation.state}`);
 expect(claimDecision.evaluation.disposition === "hold", `expected HOLD, got ${claimDecision.evaluation.disposition}`);
 expect(
-  claimDecision.metadata.reason_codes.includes("contract_c_reported_verdict_not_supported"),
+  claimDecision.metadata.reason_codes.includes("contract_c_proposition_not_checkable"),
   `unexpected HOLD reason: ${claimDecision.metadata.reason_codes.join(",")}`,
 );
 const claimContractD = canonicalizeContractDWithAuthority({ decision: claimDecision, contractDAuthorityRoot });
@@ -78,6 +83,11 @@ const derivedCitationTargets = contributions
 expect(derivedCitationTargets.length === 0, `expected no citable contribution target, got ${derivedCitationTargets.length}`);
 
 const stage = child.stages?.[0] ?? null;
+expect(stage?.measurement?.status === "NOT_APPLICABLE", `expected NOT_APPLICABLE measurement, got ${stage?.measurement?.status}`);
+expect(stage?.failure_category === "MEASUREMENT_MISS_SAFE", `expected MEASUREMENT_MISS_SAFE, got ${stage?.failure_category}`);
+expect(stage?.categorical_relation?.relation === "UNRESOLVED", `expected UNRESOLVED relation, got ${stage?.categorical_relation?.relation}`);
+expect(stage?.categorical_relation?.warranted === false, "abstention relation unexpectedly warranted");
+
 const result = {
   schema: "decision-engine-cal-valid-abstention-v1",
   decision_engine_head: process.env.DECISION_ENGINE_RESEARCH_HEAD ?? null,
@@ -97,6 +107,8 @@ const result = {
     contract_c_projection: child.contract_c_projection,
     measurement_status: stage?.measurement?.status ?? null,
     failure_category: stage?.failure_category ?? null,
+    categorical_relation: stage?.categorical_relation?.relation ?? null,
+    relation_warranted: stage?.categorical_relation?.warranted ?? null,
   },
   observed: {
     supported_claim_policy: {
@@ -113,7 +125,7 @@ const result = {
     safe_no_positive_decision_surface:
       claimDecision.evaluation.disposition === "hold" && derivedCitationTargets.length === 0,
   },
-  interpretation: "A valid CAL abstention remains a Decision HOLD for claim verification and exposes no exact contribution target that the maintained causal-basis citation helper can nominate as deciding evidence.",
+  interpretation: "A valid CAL abstention remains a Decision HOLD for claim verification and exposes no exact contribution target that the maintained causal-basis citation helper can nominate as deciding evidence. CAL's internal abstention verdict remains null while Contract C intentionally compresses the downstream state to not_checkable.",
   nonclaims: [
     "This does not establish that every CAL abstention has zero residual contributions.",
     "This does not establish source legitimacy or corpus completeness.",
