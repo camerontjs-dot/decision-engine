@@ -11,6 +11,19 @@ def sha256_text(text: str) -> str:
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def contract_a_handoff_sha256(value: dict) -> str:
+    payload = dict(value)
+    payload.pop("handoff_sha256", None)
+    raw = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(raw).hexdigest()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cal-root", required=True, type=Path)
@@ -26,6 +39,7 @@ def main() -> int:
     assert any(p["evidence_id"] == "PIPE-P1" for p in case["passages"])
     assert not any(p["evidence_id"] == "PIPE-P4" for p in case["passages"])
 
+    original_handoff_sha256 = case["contract_a"]["handoff_sha256"]
     contrary = "Women exceeded Men by 5 percentage points."
     case["contract_a"]["sources"].append(
         {
@@ -35,6 +49,9 @@ def main() -> int:
             "source_id": "PIPE-S4",
         }
     )
+    case["contract_a"]["handoff_sha256"] = contract_a_handoff_sha256(case["contract_a"])
+    assert case["contract_a"]["handoff_sha256"] != original_handoff_sha256
+
     case["passages"].append(
         {
             "evidence_id": "PIPE-P4",
@@ -61,6 +78,8 @@ def main() -> int:
         "added_passage_id": "PIPE-P4",
         "added_text": contrary,
         "added_content_sha256": sha256_text(contrary),
+        "contract_a_handoff_sha256_before": original_handoff_sha256,
+        "contract_a_handoff_sha256_after": case["contract_a"]["handoff_sha256"],
         "child_1_accepted": row["accepted"],
         "cohort_path": str(cohort_path),
         "admission_path": str(admission_path),
