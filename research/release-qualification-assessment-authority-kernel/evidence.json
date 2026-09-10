@@ -1,0 +1,45 @@
+{
+  "fixture_version": "release-qualification-evidence/research-0",
+  "candidate": {
+    "repository": "camerontjs-dot/decision-engine",
+    "base_sha": "a4425f8eb47449ff6c683222921bbea9483742e2",
+    "commit_sha": "ff4783aa55e63f3ca098d2f54884b43b96fee31f",
+    "tree_sha": "e4c80a4e2b4d5730cc108690d0d319e1094bace1"
+  },
+  "observations": [
+    {
+      "id": "required-ci",
+      "kind": "github_actions_workflow_run",
+      "immutable_id": "github-actions:run:34430551382:attempt:1",
+      "run_id": "34430551382",
+      "head_sha": "ff4783aa55e63f3ca098d2f54884b43b96fee31f",
+      "workflow": "CI & Repository Hygiene Verification",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "JavaScript Tests",
+          "conclusion": "success"
+        },
+        {
+          "name": "Path & Secret Leak Audit",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "contract-first-cli-conformance",
+      "kind": "github_actions_workflow_run",
+      "immutable_id": "github-actions:run:34430551350:attempt:1",
+      "run_id": "34430551350",
+      "head_sha": "ff4783aa55e63f3ca098d2f54884b43b96fee31f",
+      "workflow": "Contract-first Decision evaluate CLI conformance",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "evaluate-cli-conformance",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
