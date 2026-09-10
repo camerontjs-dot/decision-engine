@@ -41,6 +41,10 @@ function sortedUniqueStrings(values, label) {
   }
 }
 
+function codeUnitCompare(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function entryRoot(entries) {
   return sha256Json(entries.map((entry) => ({
     byte_count: entry.byte_count,
@@ -62,7 +66,7 @@ export function buildManifestValue({ repository, commitSha, manifestId, required
         role: entry.role,
       };
     })
-    .sort((a, b) => a.path.localeCompare(b.path));
+    .sort((a, b) => codeUnitCompare(a.path, b.path));
 
   const value = {
     entries: normalizedEntries,
