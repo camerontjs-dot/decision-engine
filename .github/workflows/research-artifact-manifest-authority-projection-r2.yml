@@ -1,0 +1,123 @@
+name: Research - Artifact manifest authority projection R2
+
+on:
+  push:
+    branches:
+      - research/artifact-manifest-authority-projection-20260910-r2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heterogeneous-authority-r2:
+    runs-on: ubuntu-24.04
+    env:
+      BASE_RECORD_HEAD: fedbab50f34da09198a2e392ac90fe100e5d3542
+      FAILED_R1_HEAD: 66ce579ba98ed1c93a2556f3418d25f20a9bb31e
+      SPECIMEN_COMMIT: 33f39e88f0f94a13afe740d087e4896247695f79
+      PROJECTION_KERNEL_SHA: e12d53020b3a6a046f4ee7688db0a5ea5c5e0a63e758b1c1e5711e7b227759e3
+      CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+      CONTRACT_C_TAG: contract-c-v1.0.0
+      CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+      CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+      CONTRACT_D_TAG: contract-d-v1.0.0
+      CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+    steps:
+      - name: Checkout R2 research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact PR58 specimen
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.SPECIMEN_COMMIT }}
+          path: .specimen
+          fetch-depth: 0
+
+      - name: Checkout exact Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: .contract-c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: .contract-d
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './.contract-d[dev]'
+
+      - name: Verify exact authorities, frozen kernel, and failed-R1 ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$FAILED_R1_HEAD" HEAD
+          git merge-base --is-ancestor "$BASE_RECORD_HEAD" HEAD
+          test "$(git -C .specimen rev-parse HEAD)" = "$SPECIMEN_COMMIT"
+          test "$(sha256sum .specimen/research/contract-c-adapter-projection-kernel/projectionKernel.mjs | cut -d' ' -f1)" = "$PROJECTION_KERNEL_SHA"
+          test "$(sha256sum research/contract-c-adapter-projection-kernel/projectionKernel.mjs | cut -d' ' -f1)" = "$PROJECTION_KERNEL_SHA"
+          test "$(git -C .contract-c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C .contract-c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C .contract-c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C .contract-d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C .contract-d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C .contract-d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+      - name: Execute corrected heterogeneous authority pressure test
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .manifest-output-r2
+          mkdir -p .manifest-output-r2
+          node research/artifact-manifest-authority-projection/run.mjs \
+            --specimen-root "$PWD/.specimen" \
+            --contract-c-root "$PWD/.contract-c" \
+            --contract-d-root "$PWD/.contract-d" \
+            --out "$PWD/.manifest-output-r2" | tee .manifest-output-r2/console.log
+
+      - name: Verify research-only mutation surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$BASE_RECORD_HEAD"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Eq '^(src|scripts|tests)/'; then
+            echo 'Heterogeneous authority experiment modified maintained Decision paths' >&2
+            exit 1
+          fi
+
+      - name: Package R2 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf artifact-manifest-authority-projection-r2-evidence.tgz \
+            .manifest-output-r2 \
+            research/artifact-manifest-authority-projection
+          sha256sum artifact-manifest-authority-projection-r2-evidence.tgz | tee .manifest-output-r2/evidence-tgz.sha256
+
+      - name: Upload R2 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-manifest-authority-projection-r2-${{ github.run_id }}
+          path: |
+            .manifest-output-r2/
+            artifact-manifest-authority-projection-r2-evidence.tgz
+          if-no-files-found: error
+          retention-days: 90
