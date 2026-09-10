@@ -98,10 +98,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/noncal-c
+          PRODUCER_SHA="$(git log -1 --format=%H -- research/noncal-contract-c-producer/producer.py)"
+          test "$PRODUCER_SHA" != ""
+          echo "producer_source_commit=$PRODUCER_SHA"
           python research/noncal-contract-c-producer/producer.py \
             --bundle build/eb-qualification/contract_b/C01_DIRECT \
             --contract-c-root external/contract-c-authority \
-            --semantic-implementation-sha "${GITHUB_SHA}" \
+            --semantic-implementation-sha "$PRODUCER_SHA" \
             --out-dir build/noncal-c
           cat build/noncal-c/producer-summary.json
 
@@ -132,6 +135,7 @@ jobs:
           set -euo pipefail
           {
             echo "decision_head=${GITHUB_SHA}"
+            echo "producer_source_commit=$(git log -1 --format=%H -- research/noncal-contract-c-producer/producer.py)"
             echo "decision_base=358c2bb20f490bf25e808434394b26a70a16a123"
             echo "evidence_bundler_head=dd4fb2b89f351fbdcd8b08e48dd9d7d1f10c2d05"
             echo "contract_b_authority=c314e53bd91c0736aa4370a364673b069aceb43e"
