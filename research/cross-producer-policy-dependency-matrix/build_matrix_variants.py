@@ -5,6 +5,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import sys
 from pathlib import Path
 from typing import Any, Callable
 
@@ -22,6 +23,9 @@ def load_validator(root: Path) -> Any:
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load Contract C validator: {path}")
     module = importlib.util.module_from_spec(spec)
+    # The released validator uses postponed annotations. Register the exact module
+    # before executing it so Pydantic can resolve those annotations by module name.
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
