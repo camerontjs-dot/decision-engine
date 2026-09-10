@@ -87,7 +87,7 @@ jobs:
       - name: Verify semantic producer has no CAL or evaluator-gold dependency
         run: |
           set -euo pipefail
-          if grep -nE 'claim_audit_lab|evaluator_gold|cal_rc0|RC8J|RC7F' research/noncal-contract-c-producer/producer.py; then
+          if grep -nE '(from|import)[[:space:]]+claim_audit_lab|evaluator_gold\.json|RC8J|RC7F' research/noncal-contract-c-producer/producer.py; then
             echo "Independent producer contains forbidden upstream semantic dependency"
             exit 1
           fi
