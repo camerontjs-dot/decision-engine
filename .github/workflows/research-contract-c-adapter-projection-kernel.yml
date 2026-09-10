@@ -1,0 +1,122 @@
+name: Research - Contract C adapter projection kernel
+
+on:
+  push:
+    branches:
+      - research/contract-c-adapter-projection-kernel-20260909-r2
+  pull_request:
+    paths:
+      - 'research/contract-c-adapter-projection-kernel/**'
+      - '.github/workflows/research-contract-c-adapter-projection-kernel.yml'
+
+permissions:
+  contents: read
+
+env:
+  DECISION_MAIN_BASE: 358c2bb20f490bf25e808434394b26a70a16a123
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+
+jobs:
+  exact-byte-checkpoint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: .contract-c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: .contract-d
+          fetch-depth: 0
+
+      - name: Checkout frozen real-CAL Contract C corpus
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: .rc1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './.contract-d[dev]'
+
+      - name: Verify exact authorities and stacked base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$DECISION_MAIN_BASE" HEAD
+          test "$(git -C .contract-c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C .contract-c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C .contract-c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C .contract-d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C .contract-d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C .contract-d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+          test "$(git -C .rc1 rev-parse HEAD)" = "$CONTRACT_C_RC1_EVIDENCE"
+
+      - name: Execute exact-byte checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .adapter-output
+          mkdir -p .adapter-output
+          node research/contract-c-adapter-projection-kernel/run.mjs \
+            --contract-c-root "${{ github.workspace }}/.contract-c" \
+            --contract-d-root "${{ github.workspace }}/.contract-d" \
+            --rc1-root "${{ github.workspace }}/.rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus" \
+            --out "${{ github.workspace }}/.adapter-output" | tee .adapter-output/console.log
+
+      - name: Verify research-only mutation surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$DECISION_MAIN_BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Eq '^(src|scripts|tests)/'; then
+            echo 'Research checkpoint modified maintained Decision paths' >&2
+            exit 1
+          fi
+
+      - name: Package exact evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf contract-c-adapter-projection-kernel-evidence.tgz \
+            .adapter-output \
+            research/contract-c-adapter-projection-kernel
+          sha256sum contract-c-adapter-projection-kernel-evidence.tgz | tee .adapter-output/evidence-tgz.sha256
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-adapter-projection-kernel-${{ github.run_id }}
+          path: |
+            .adapter-output/
+            contract-c-adapter-projection-kernel-evidence.tgz
+          if-no-files-found: error
+          retention-days: 90
