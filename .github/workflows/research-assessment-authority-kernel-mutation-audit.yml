@@ -1,0 +1,102 @@
+name: Research - Assessment-authority kernel mutation audit
+
+on:
+  push:
+    branches:
+      - research/assessment-authority-kernel-mutation-audit-20260909
+  pull_request:
+    paths:
+      - 'research/assessment-authority-kernel-mutation-audit/**'
+      - '.github/workflows/research-assessment-authority-kernel-mutation-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stacked research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+          path: .research-contract-d
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact Contract D validator dependency
+        run: python -m pip install 'rfc8785==0.1.4'
+
+      - name: Verify stacked dependency and exact Contract D authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor a6328085fc3e634e57133c5e6c5fe4d345fb4d82 HEAD
+          test "$(git -C .research-contract-d rev-parse HEAD)" = "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+          test "$(git -C .research-contract-d rev-parse refs/tags/contract-d-v1.0.0)" = "6eadd688b482f3c9fce2ce5e7a2841089d852096"
+          test "$(git -C .research-contract-d rev-parse 'refs/tags/contract-d-v1.0.0^{}')" = "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+
+      - name: Execute mutation audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .mutation-output
+          mkdir -p .mutation-output
+          node research/assessment-authority-kernel-mutation-audit/run.mjs \
+            --evidence research/release-qualification-assessment-authority-kernel/evidence.json \
+            --contract-d-root .research-contract-d \
+            --out .mutation-output | tee .mutation-output/console.log
+
+      - name: Verify no temporary mutants or maintained mutations remain
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find research/release-qualification-assessment-authority-kernel -maxdepth 1 -name '*.__mutant_*' -print -quit | grep -q .; then
+            echo 'Temporary mutant files remain' >&2
+            exit 1
+          fi
+          git fetch origin main
+          changed="$(git diff --name-only origin/main...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Eq '^(src|scripts|tests)/'; then
+            echo 'Mutation audit modified maintained Decision paths' >&2
+            exit 1
+          fi
+
+      - name: Package mutation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf assessment-authority-kernel-mutation-audit-evidence.tgz \
+            .mutation-output \
+            research/assessment-authority-kernel-mutation-audit/README.md \
+            research/assessment-authority-kernel-mutation-audit/run.mjs \
+            research/release-qualification-assessment-authority-kernel/kernel.mjs \
+            research/release-qualification-assessment-authority-kernel/releasePolicies.mjs \
+            research/release-qualification-assessment-authority-kernel/producer.mjs \
+            research/release-qualification-assessment-authority-kernel/evidence.json
+          sha256sum assessment-authority-kernel-mutation-audit-evidence.tgz | tee .mutation-output/evidence-tgz.sha256
+
+      - name: Upload mutation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: assessment-authority-kernel-mutation-audit-${{ github.run_id }}
+          path: |
+            .mutation-output/
+            assessment-authority-kernel-mutation-audit-evidence.tgz
+          if-no-files-found: error
