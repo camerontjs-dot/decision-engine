@@ -1,0 +1,151 @@
+name: Research - Non-CAL Contract C producer seam
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "research/noncal-contract-c-producer/**"
+      - ".github/workflows/research-noncal-contract-c-producer.yml"
+
+concurrency:
+  group: research-noncal-c-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  producer-substitution:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine candidate
+        uses: actions/checkout@v4
+
+      - name: Checkout exact Evidence Bundler research producer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: dd4fb2b89f351fbdcd8b08e48dd9d7d1f10c2d05
+          path: external/evidence-bundler
+
+      - name: Checkout exact Contract B authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: c314e53bd91c0736aa4370a364673b069aceb43e
+          path: external/contract-b-authority
+          fetch-depth: 0
+
+      - name: Checkout exact Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+          path: external/contract-c-authority
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+          path: external/contract-d-authority
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install bounded apparatus dependencies
+        run: python -m pip install "pydantic>=2.6,<3" "PyYAML>=6,<7" "rfc8785>=0.1,<1"
+
+      - name: Verify exact authority refs
+        run: |
+          set -euo pipefail
+          test "$(git -C external/evidence-bundler rev-parse HEAD)" = "dd4fb2b89f351fbdcd8b08e48dd9d7d1f10c2d05"
+          test "$(git -C external/contract-b-authority rev-parse HEAD)" = "c314e53bd91c0736aa4370a364673b069aceb43e"
+          test "$(git -C external/contract-c-authority rev-parse HEAD)" = "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+          test "$(git -C external/contract-d-authority rev-parse HEAD)" = "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+          test "$(git -C external/contract-c-authority hash-object validators/contract_c.py)" = "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+
+      - name: Produce sealed Contract B qualification cohort without CAL
+        working-directory: external/evidence-bundler
+        env:
+          PYTHONPATH: src:.
+        run: |
+          set -euo pipefail
+          python -m research.cal_rc0_contract_b_handoff.qualification_runner \
+            --research-root research/cal_rc0_contract_b_handoff \
+            --out-dir ../../build/eb-qualification
+          test -f ../../build/eb-qualification/contract_b/C01_DIRECT/bundle_manifest.yaml
+
+      - name: Verify semantic producer has no CAL or evaluator-gold dependency
+        run: |
+          set -euo pipefail
+          if grep -nE 'claim_audit_lab|evaluator_gold|cal_rc0|RC8J|RC7F' research/noncal-contract-c-producer/producer.py; then
+            echo "Independent producer contains forbidden upstream semantic dependency"
+            exit 1
+          fi
+
+      - name: Produce independent Contract C from exact Contract B
+        run: |
+          set -euo pipefail
+          mkdir -p build/noncal-c
+          python research/noncal-contract-c-producer/producer.py \
+            --bundle build/eb-qualification/contract_b/C01_DIRECT \
+            --contract-c-root external/contract-c-authority \
+            --semantic-implementation-sha "${GITHUB_SHA}" \
+            --out-dir build/noncal-c
+          cat build/noncal-c/producer-summary.json
+
+      - name: Revalidate independent Contract C with exact released validator and exact B index
+        run: |
+          set -euo pipefail
+          python external/contract-c-authority/validators/contract_c.py \
+            build/noncal-c/contract-c.json \
+            --expected-sha256 "$(cat build/noncal-c/contract-c.sha256)" \
+            --contract-b-index build/noncal-c/contract-b-index.json
+
+      - name: Exercise unchanged maintained Decision Engine policies
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/external/contract-c-authority
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/external/contract-d-authority
+          NONCAL_C_INPUT_DIR: ${{ github.workspace }}/build/noncal-c
+          NONCAL_DE_OUTPUT_DIR: ${{ github.workspace }}/build/noncal-de
+          PYTHON: python
+        run: node research/noncal-contract-c-producer/de_probe.mjs
+
+      - name: Verify research branch did not mutate maintained Decision machinery
+        run: |
+          set -euo pipefail
+          git diff --exit-code 358c2bb20f490bf25e808434394b26a70a16a123 -- src scripts tests
+
+      - name: Write experiment inventory
+        run: |
+          set -euo pipefail
+          {
+            echo "decision_head=${GITHUB_SHA}"
+            echo "decision_base=358c2bb20f490bf25e808434394b26a70a16a123"
+            echo "evidence_bundler_head=dd4fb2b89f351fbdcd8b08e48dd9d7d1f10c2d05"
+            echo "contract_b_authority=c314e53bd91c0736aa4370a364673b069aceb43e"
+            echo "contract_c_authority=5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+            echo "contract_d_authority=298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+            echo "cal_executed=false"
+          } > build/experiment-inventory.txt
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: noncal-contract-c-producer-${{ github.sha }}
+          path: |
+            build/noncal-c/**
+            build/noncal-de/**
+            build/eb-qualification/qualification_summary.json
+            build/experiment-inventory.txt
+          if-no-files-found: error
+          retention-days: 30
