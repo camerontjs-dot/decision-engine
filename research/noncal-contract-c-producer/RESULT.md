@@ -8,21 +8,24 @@ A semantic producer that imported no Claim Audit Lab code and consumed no CAL ar
 
 This demonstrates one real non-CAL producer at the Contract C seam. It does not establish semantic quality outside the preregistered grammar, trust of arbitrary Contract C producers, or that the current Decision policies should be refactored around a generic primitive.
 
-## Exact science evidence
+## Exact final reproduction evidence
 
 Decision Engine base: `358c2bb20f490bf25e808434394b26a70a16a123`.
 
-Decisive all-green research run before result-only/source-identity bookkeeping:
+Final stable-producer reproduction:
 
 - workflow: `Research - Non-CAL Contract C producer seam`
-- run: `34432105202`
-- job: `102729574763`
-- branch science head: `17d8ed28d7b4aa4b933a393cd2ce1691407d50c5`
-- GitHub PR merge ref executed by that run: `da2de8bdc71454f5179cab8234ace247c0de15d8`
-- ordinary repository CI on the same branch science head: `34432105207` — **SUCCESS**
-- artifact: `noncal-contract-c-producer-da2de8bdc71454f5179cab8234ace247c0de15d8`
-- artifact ID: `10134851638`
-- artifact ZIP SHA-256: `22e3da9dbc6eba227122e2d40927703e573bb995db363ab66fb0069f6d4edc27`
+- run: `34432368115` — **SUCCESS**
+- job: `102730359797` — **SUCCESS**
+- branch head evaluated: `c25c27482212ad2bc039952b4d664df3fb9b1b28`
+- GitHub PR merge ref executed: `2dd18ff023e352578b606c905f3851681ec120e8`
+- ordinary repository CI on the same branch head: `34432368174` — **SUCCESS**
+- semantic producer source commit: `92dd837935a46e4a92197309611856516e11d480`
+- artifact: `noncal-contract-c-producer-2dd18ff023e352578b606c905f3851681ec120e8`
+- artifact ID: `10134944086`
+- artifact ZIP SHA-256: `39beaef9b2bcbc0d972fbfc3a573c9435d71e94d21bc72d8f47f5d6c3d9982a1`
+
+The earlier all-green run `34432105202` remains valid evidence of the same semantic result, but its `producer.semantic_implementation_sha` was bound to GitHub's temporary PR merge ref. The final reproduction above fixes that apparatus bookkeeping by binding producer identity to the last commit that changed `producer.py` and reruns the entire semantic and no-maintained-source-mutation aperture successfully.
 
 Exact external authorities:
 
@@ -53,16 +56,17 @@ It read proposition text and retained passage text from the exact Contract B bun
 - unsupported proposition grammar -> `not_checkable`
 - more than one matching passage -> `not_checkable`
 
-The producer did not rank ambiguous matches, compose the compound proposition, or import CAL semantics. Contract C canonicalization, result-set identity construction, and validation were supplied by released contract apparatus after the producer had derived its narrow semantic state.
+The producer did not rank ambiguous matches, compose the compound proposition, or import CAL semantics. Contract C canonicalization, result-set identity construction, and validation were supplied by released contract apparatus only after the producer had derived its narrow semantic state.
 
 ## Observed
 
-### Contract C production
+### Stable Contract C production
 
-The science run produced:
+The final reproduction produced:
 
-- Contract C whole-object SHA-256: `sha256:7c0aa44fd93cffb5ed590530a44ae3e37c9fc3c0c5687868a4465ed51bd2ff4b`
-- result-set ID observed downstream: `result-set:39b265c1c357e22f81245ae2f04b425d32a859b1b0c8d354613a63c7c264c6b6`
+- semantic implementation SHA: `92dd837935a46e4a92197309611856516e11d480`
+- Contract C whole-object SHA-256: `sha256:3f29c2b29c4b53cbafcc1ca7cf889069cf6c28ff97aae31f910531d2545b34b7`
+- result-set ID: `result-set:95d0910390cc0b2235f7b822580d790f7ac6ff66db76ef885accc17008a4e18c`
 - exact released Contract C validation with the exact B index: **PASS**
 - `cal_imported=false`
 - `evaluator_gold_consumed=false`
@@ -89,25 +93,25 @@ The root result is intentional. The producer had no registered semantic rule for
 
 ### Unchanged Decision Engine consumption
 
-No maintained `src/**`, `scripts/**`, or `tests/**` bytes changed relative to base in the decisive run.
+No maintained `src/**`, `scripts/**`, or `tests/**` bytes changed relative to base in the final reproduction.
 
 For `C01_DIRECT:child:1`:
 
 - supported-claim verification: `completed / clear`
 - effect: `knowledge.add_verified_tag@1(scope=claim)`
-- canonical Contract D SHA-256: `sha256:b8da43c2b0b82d09ca23cba4f3ab943bee0fa7fbe0709c5d3c607ef70d0042cf`
+- canonical Contract D SHA-256: `sha256:76743ca9f0cc6998f376a9d189aecb716d7e9a140d1b55b13c31a714dc1f42ee`
 - causal-basis citation: `completed / clear`
 - effect: `knowledge.cite_as_evidence@1`
-- canonical Contract D SHA-256: `sha256:93167b3cffdc470476e9eee37dcd4055a7a19afac6eda09d04ef4c49bc0795fd`
+- canonical Contract D SHA-256: `sha256:4c0929d2dd0d41f976169f2943f33033087db870f09bbd75a6b59a416726e5c7`
 
 For `C01_DIRECT:child:2`:
 
 - supported-claim verification: `completed / clear`
 - effect: `knowledge.add_verified_tag@1(scope=claim)`
-- canonical Contract D SHA-256: `sha256:29df7568744850eb64b074e92ce610d626c3cb55fae2de174151016c93c22789`
+- canonical Contract D SHA-256: `sha256:45871e34cda1b45ffef518e7327f93b6da36619bca0812f48bbbf379c3315407`
 - causal-basis citation: `completed / clear`
 - effect: `knowledge.cite_as_evidence@1`
-- canonical Contract D SHA-256: `sha256:4a3dcaa15b4772ca6bdfdb9cb768a74d8baae78fa7a8ae10c56dc85e433da51e`
+- canonical Contract D SHA-256: `sha256:4e8ede4b12fc59938bd4d069065bf62b8f0e3d03885a614da37347ff41738874`
 
 For `C01_DIRECT:root`:
 
@@ -119,12 +123,13 @@ Additional controls:
 - exact target-content substitution -> rejected `target_binding_mismatch`
 - repeated identical Decision input -> byte-identical canonical Contract D
 - exact Contract D authority validation -> PASS
+- maintained-source mutation guard -> PASS
 - Authorization performed -> false
 - execution performed -> false
 
 ## Preserved deviations
 
-These are apparatus deviations, not erased retries.
+These apparatus deviations are retained rather than erased by the successful rerun.
 
 ### Run 1 — missing bounded EB dependency
 
@@ -148,17 +153,13 @@ The checkout was changed to full history. No semantic code changed.
 
 Disposition: receipt/harness failure after semantic PASS.
 
-### Science run producer-identity bookkeeping
+### First all-green run — transient producer identity
 
-In decisive run `34432105202`, the workflow supplied GitHub's PR merge-ref `GITHUB_SHA` as `producer.semantic_implementation_sha`. This identifies the exact executed integration tree but is not the most stable identity for the semantic producer source, because result-only or workflow changes can change the merge ref without changing `producer.py`.
+Run `34432105202` was fully green, but it supplied GitHub's PR merge-ref SHA as `producer.semantic_implementation_sha`. That exactly identified the executed integration tree, yet it changed under workflow/result-only commits even when the semantic producer source did not.
 
-After the decisive run, the workflow was hardened to derive semantic implementation identity from:
+The apparatus was changed to derive semantic implementation identity from the last commit touching `producer.py`. The final reproduction then bound the producer to `92dd837935a46e4a92197309611856516e11d480` and reran every semantic and mutation-guard step successfully.
 
-`git log -1 --format=%H -- research/noncal-contract-c-producer/producer.py`
-
-At the time this result was written, the last commit touching `producer.py` was `92dd837935a46e4a92197309611856516e11d480`.
-
-This bookkeeping hardening is not used to rewrite the identity of the already-executed science artifact. The decisive artifact remains exactly as produced.
+Disposition: bookkeeping weakness resolved by independent final reproduction; earlier artifact preserved unchanged.
 
 ## Inference
 
