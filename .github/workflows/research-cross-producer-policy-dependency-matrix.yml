@@ -226,11 +226,20 @@ jobs:
             echo "execution_performed=false"
           } > build/EXPERIMENT-INVENTORY.txt
 
+      - name: Pack matrix evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -d build; then
+            tar -czf CROSS-PRODUCER-POLICY-DEPENDENCY-MATRIX.tgz build
+          fi
+
       - name: Upload matrix evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cross-producer-policy-dependency-matrix-${{ github.run_id }}
-          path: build/**
+          path: CROSS-PRODUCER-POLICY-DEPENDENCY-MATRIX.tgz
           if-no-files-found: error
           retention-days: 90
