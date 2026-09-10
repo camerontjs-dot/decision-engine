@@ -1,0 +1,236 @@
+name: Research - Cross-producer Contract C policy dependency matrix
+
+on:
+  push:
+    branches:
+      - research/cross-producer-policy-dependency-matrix-20260909
+  pull_request:
+    paths:
+      - "research/cross-producer-policy-dependency-matrix/**"
+      - ".github/workflows/research-cross-producer-policy-dependency-matrix.yml"
+      - "src/contractC*.js"
+      - "src/contractD*.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DECISION_ENGINE_BASE: 358c2bb20f490bf25e808434394b26a70a16a123
+  DECISION_ENGINE_RESEARCH_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  CAL_HEAD: 4b9d69936d8ecdbaac0217561be7a3a821b70522
+  EB_HEAD: 50270b9bfcf6b5112c6ec88c02c7cdd7215e0ff4
+  RC7FB1_HEAD: 0ecdedc5cea970485a635508255f3670ab231c33
+  RC8J_HEAD: 8e75c6782bb95c3763d06230b9c5df2b6af44054
+  CONTRACT_B_HEAD: c314e53bd91c0736aa4370a364673b069aceb43e
+  CONTRACT_C_HEAD: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_D_HEAD: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  TARGET_PROPOSITION: PIPELINE_SMOKE_001:child:1
+
+jobs:
+  dependency-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision Engine candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Verify exact Decision research head and unchanged maintained base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$DECISION_ENGINE_RESEARCH_HEAD"
+          git cat-file -e "$DECISION_ENGINE_BASE^{commit}"
+
+      - name: Checkout exact CAL, Evidence Bundler, evaluators and contract authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/cal
+          git -C _deps/cal checkout "$CAL_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/evidence-bundler.git _deps/evidence-bundler
+          git -C _deps/evidence-bundler checkout "$EB_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/rc7fb1
+          git -C _deps/rc7fb1 checkout "$RC7FB1_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/rc8j
+          git -C _deps/rc8j checkout "$RC8J_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-b
+          git -C _deps/apparatus-b checkout "$CONTRACT_B_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-c
+          git -C _deps/apparatus-c checkout "$CONTRACT_C_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-d
+          git -C _deps/apparatus-d checkout "$CONTRACT_D_HEAD"
+          test "$(git -C _deps/cal rev-parse HEAD)" = "$CAL_HEAD"
+          test "$(git -C _deps/evidence-bundler rev-parse HEAD)" = "$EB_HEAD"
+          test "$(git -C _deps/rc7fb1 rev-parse HEAD)" = "$RC7FB1_HEAD"
+          test "$(git -C _deps/rc8j rev-parse HEAD)" = "$RC8J_HEAD"
+          test "$(git -C _deps/apparatus-b rev-parse HEAD)" = "$CONTRACT_B_HEAD"
+          test "$(git -C _deps/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_HEAD"
+          test "$(git -C _deps/apparatus-d rev-parse HEAD)" = "$CONTRACT_D_HEAD"
+          test "$(git -C _deps/apparatus-c hash-object validators/contract_c.py)" = "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+
+      - name: Install exact CAL integration dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install "PyYAML>=6.0,<7" "pydantic>=2.6,<3" "rfc8785==0.1.4"
+          cd _deps/cal
+          uv sync
+          uv pip install --python .venv/bin/python -e ../evidence-bundler
+
+      - name: Regenerate fresh CAL producer and exact Contract B input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/build"
+          cd _deps/cal
+          uv run python pipeline/cal_rc0/entity_scoped_entrypoint.py \
+            --cal-root . \
+            --cal-head "$CAL_HEAD" \
+            --evidence-bundler-root "$GITHUB_WORKSPACE/_deps/evidence-bundler" \
+            --rc7fb1-root "$GITHUB_WORKSPACE/_deps/rc7fb1" \
+            --rc8j-root "$GITHUB_WORKSPACE/_deps/rc8j" \
+            --apparatus-b "$GITHUB_WORKSPACE/_deps/apparatus-b" \
+            --apparatus-c "$GITHUB_WORKSPACE/_deps/apparatus-c" \
+            --cohort pipeline/cal_rc0/fixtures/cohort.json \
+            --admission pipeline/cal_rc0/fixtures/admission.json \
+            --targets pipeline/cal_rc0/fixtures/cal_targets.json \
+            --eb-profile pipeline/cal_rc0/eb_profile.json \
+            --semantic-implementation-sha "$CAL_HEAD" \
+            --test-keys \
+            --out-dir "$GITHUB_WORKSPACE/build/cal-pipeline" \
+            | tee "$GITHUB_WORKSPACE/build/CAL-PIPELINE-STDOUT.json"
+
+      - name: Extract target CAL Contract C
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/matrix-inputs/cal
+          python3 - <<'PY'
+          import json, shutil
+          from pathlib import Path
+          root = Path('build/cal-pipeline')
+          receipt = json.loads((root / 'PIPELINE-RECEIPT.json').read_text())
+          assert receipt['pipeline_status'] == 'PASS'
+          target = 'PIPELINE_SMOKE_001:child:1'
+          child = next(row for row in receipt['cal']['children'] if row['proposition_id'] == target)
+          source = root / child['contract_c_path']
+          shutil.copyfile(source, Path('build/matrix-inputs/cal/contract-c.json'))
+          (Path('build/matrix-inputs/cal/source.json')).write_text(json.dumps({
+              'proposition_id': target,
+              'contract_c_path': child['contract_c_path'],
+              'contract_b': {
+                  'contract_version': receipt['contract_b']['validation']['contract_version'],
+                  'bundle_id': receipt['contract_b']['bundle_id'],
+                  'bundle_hash': receipt['contract_b']['bundle_hash'],
+              },
+          }, sort_keys=True, separators=(',', ':')) + '\n')
+          PY
+
+      - name: Verify shadow producer has no CAL dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -nE '(from|import)[[:space:]]+claim_audit_lab|RC8J|RC7F|PIPELINE-RECEIPT|contract_c_path' research/cross-producer-policy-dependency-matrix/independent_producer.py; then
+            echo "shadow producer contains forbidden CAL/result dependency" >&2
+            exit 1
+          fi
+
+      - name: Produce structural shadow C from the same exact Contract B and proposition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/matrix-inputs/shadow
+          PRODUCER_SHA="$(git log -1 --format=%H -- research/cross-producer-policy-dependency-matrix/independent_producer.py)"
+          test "$PRODUCER_SHA" != ""
+          echo "shadow_producer_source_commit=$PRODUCER_SHA"
+          python3 research/cross-producer-policy-dependency-matrix/independent_producer.py \
+            --bundle build/cal-pipeline/evidence-bundler/contract_b/PIPELINE_SMOKE_001 \
+            --contract-c-root _deps/apparatus-c \
+            --semantic-implementation-sha "$PRODUCER_SHA" \
+            --proposition-id "$TARGET_PROPOSITION" \
+            --out-dir build/matrix-inputs/shadow \
+            | tee build/SHADOW-PRODUCER-STDOUT.json
+
+      - name: Revalidate CAL C against the exact same independently built Contract B index
+        shell: bash
+        run: |
+          set -euo pipefail
+          CAL_C_SHA="sha256:$(sha256sum build/matrix-inputs/cal/contract-c.json | cut -d' ' -f1)"
+          python3 _deps/apparatus-c/validators/contract_c.py \
+            build/matrix-inputs/cal/contract-c.json \
+            --expected-sha256 "$CAL_C_SHA" \
+            --contract-b-index build/matrix-inputs/shadow/contract-b-index.json
+
+      - name: Build exact-validator counterfactual matrix for both producer families
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/cross-producer-policy-dependency-matrix/build_matrix_variants.py \
+            --cal-c build/matrix-inputs/cal/contract-c.json \
+            --shadow-c build/matrix-inputs/shadow/contract-c.json \
+            --contract-b-index build/matrix-inputs/shadow/contract-b-index.json \
+            --contract-c-root _deps/apparatus-c \
+            --proposition-id "$TARGET_PROPOSITION" \
+            --out-dir build/matrix-variants \
+            | tee build/MATRIX-VARIANTS-STDOUT.json
+
+      - name: Run unchanged maintained Decision policies across matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/cross-producer-policy-dependency-matrix/run_matrix.mjs \
+            --manifest build/matrix-variants/variants-manifest.json \
+            --contract-c-authority _deps/apparatus-c \
+            --contract-d-authority _deps/apparatus-d \
+            --out-dir build/matrix-results \
+            | tee build/MATRIX-RESULT-STDOUT.json
+
+      - name: Assert research branch did not mutate maintained Decision machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$DECISION_ENGINE_BASE" -- src scripts tests
+
+      - name: Write experiment inventory
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          {
+            echo "decision_head=${DECISION_ENGINE_RESEARCH_HEAD}"
+            echo "decision_base=${DECISION_ENGINE_BASE}"
+            echo "cal_head=${CAL_HEAD}"
+            echo "eb_head=${EB_HEAD}"
+            echo "rc7fb1_head=${RC7FB1_HEAD}"
+            echo "rc8j_head=${RC8J_HEAD}"
+            echo "contract_b_authority=${CONTRACT_B_HEAD}"
+            echo "contract_c_authority=${CONTRACT_C_HEAD}"
+            echo "contract_d_authority=${CONTRACT_D_HEAD}"
+            echo "shadow_producer_source_commit=$(git log -1 --format=%H -- research/cross-producer-policy-dependency-matrix/independent_producer.py)"
+            echo "normative_noncal_contract_c_conformance_claimed=false"
+            echo "authorization_performed=false"
+            echo "execution_performed=false"
+          } > build/EXPERIMENT-INVENTORY.txt
+
+      - name: Upload matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-producer-policy-dependency-matrix-${{ github.run_id }}
+          path: build/**
+          if-no-files-found: error
+          retention-days: 90
