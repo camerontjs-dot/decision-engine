@@ -1,0 +1,54 @@
+{
+  "fixture_version": "agent-result-verification-evidence/research-0",
+  "task": {
+    "id": "decision-engine-maintenance-contract-c-authority-regression",
+    "objective": "Add the smallest maintained negative regression control proving a wrong/lookalike Contract C authority root is rejected. Touch only the maintained CLI integration test; do not change Decision runtime or policy semantics.",
+    "repository": "camerontjs-dot/decision-engine",
+    "base_sha": "a4425f8eb47449ff6c683222921bbea9483742e2",
+    "candidate_sha": "ff4783aa55e63f3ca098d2f54884b43b96fee31f",
+    "candidate_tree_sha": "e4c80a4e2b4d5730cc108690d0d319e1094bace1",
+    "allowed_paths": [
+      "tests/decisionEvaluateCli.integration.mjs"
+    ],
+    "forbidden_prefixes": [
+      "src/",
+      "scripts/"
+    ],
+    "required_patch_markers": [
+      "contractCRoot = CONTRACT_C_ROOT",
+      "contractCRoot: CONTRACT_D_ROOT",
+      "wrongCAuthorityResult",
+      "authority_identity_mismatch"
+    ]
+  },
+  "result": {
+    "changed_files": [
+      "tests/decisionEvaluateCli.integration.mjs"
+    ],
+    "patch_encoding": "base64",
+    "patch_sha256": "sha256:e38ad95df378fb0c368a7ea44d31197cd66e79930d176d969d852bf3f2ac7f1a",
+    "patch_bytes": 2701,
+    "patch_base64": "QEAgLTM3LDcgKzM3LDE1IEBAIGZ1bmN0aW9uIHdyaXRlUmF3KG5hbWUsIHJhdykgewogICByZXR1cm4gcGF0aDsKIH0KCi1mdW5jdGlvbiBydW5DbGkoeyBjb250cmFjdENQYXRoLCBjb250cmFjdENTaGEsIGV4cGVjdGVkQlBhdGgsIHBvbGljeSwgY29udGV4dFBhdGgsIGNvbnRyYWN0RFJvb3QgPSBDT05UUkFDVF9EX1JPT1QgfSkgeworZnVuY3Rpb24gcnVuQ2xpKHsKKyAgY29udHJhY3RDUGF0aCwKKyAgY29udHJhY3RDU2hhLAorICBleHBlY3RlZEJQYXRoLAorICBwb2xpY3ksCisgIGNvbnRleHRQYXRoLAorICBjb250cmFjdENSb290ID0gQ09OVFJBQ1RfQ19ST09ULAorICBjb250cmFjdERSb290ID0gQ09OVFJBQ1RfRF9ST09ULAorfSkgewogICByZXR1cm4gc3Bhd25TeW5jKAogICAgIHByb2Nlc3MuZXhlY1BhdGgsCiAgICAgWwpAQCAtNDcsNyArNTUsNyBAQCBmdW5jdGlvbiBydW5DbGkoeyBjb250cmFjdENQYXRoLCBjb250cmFjdENTaGEsIGV4cGVjdGVkQlBhdGgsIHBvbGljeSwgY29udGV4dFBhdAogICAgICAgIi0tY29udHJhY3QtYy1zaGEyNTYiLAogICAgICAgY29udHJhY3RDU2hhLAogICAgICAgIi0tY29udHJhY3QtYy1hdXRob3JpdHkiLAotICAgICAgQ09OVFJBQ1RfQ19ST09ULAorICAgICAgY29udHJhY3RDUm9vdCwKICAgICAgICItLWNvbnRyYWN0LWQtYXV0aG9yaXR5IiwKICAgICAgIGNvbnRyYWN0RFJvb3QsCiAgICAgICAiLS1leHBlY3RlZC1jb250cmFjdC1iIiwKQEAgLTIwNiw3ICsyMTQsNyBAQCBhc3NlcnRDYW5vbmljYWxVbmRlckV4YWN0RChtaXNzaW5nRGVjaXNpb24ucmF3KTsKIGFzc2VydC5kZWVwRXF1YWwobWlzc2luZ0RlY2lzaW9uLnZhbHVlLmV2YWx1YXRpb24sIHsgc3RhdGU6ICJmYWlsZWQiIH0pOwogYXNzZXJ0LmVxdWFsKCJlZmZlY3QiIGluIG1pc3NpbmdEZWNpc2lvbi52YWx1ZSwgZmFsc2UpOwoKLS8vIEZhaWwtY2xvc2VkIHRyYW5zcG9ydCwgcG9saWN5LCB0YXJnZXQsIGFuZCBDb250cmFjdCBEIGF1dGhvcml0eSBjb250cm9scyBlbWl0IG5vIERlY2lzaW9uIGJ5dGVzLgorLy8gRmFpbC1jbG9zZWQgdHJhbnNwb3J0LCBhdXRob3JpdHksIHBvbGljeSwgdGFyZ2V0LCBhbmQgQ29udHJhY3QgRCBjb250cm9scyBlbWl0IG5vIERlY2lzaW9uIGJ5dGVzLgogY29uc3Qgd3JvbmdTaGFSZXN1bHQgPSBydW5DbGkoewogICBjb250cmFjdENQYXRoOiBjYW5vbmljYWxQYXRoLAogICBjb250cmFjdENTaGE6IGBzaGEyNTY6JHsiMCIucmVwZWF0KDY0KX1gLApAQCAtMjE4LDYgKzIyNiwyMSBAQCBhc3NlcnQubm90RXF1YWwod3JvbmdTaGFSZXN1bHQuc3RhdHVzLCAwKTsKIGFzc2VydC5lcXVhbChCdWZmZXIuZnJvbSh3cm9uZ1NoYVJlc3VsdC5zdGRvdXQgfHwgQnVmZmVyLmFsbG9jKDApKS5sZW5ndGgsIDApOwogYXNzZXJ0LmVxdWFsKHN0ZGVyckpzb24od3JvbmdTaGFSZXN1bHQpLmNvZGUsICJjb250cmFjdF9jX3dob2xlX29iamVjdF9taXNtYXRjaCIpOwoKKy8vIEEgZGlmZmVyZW50IGV4YWN0IGFwcGFyYXR1cy1jb250cmFjdHMgY2hlY2tvdXQgaXMgbm90IGludGVyY2hhbmdlYWJsZSB3aXRoIHRoZSByZWxlYXNlZAorLy8gQ29udHJhY3QgQyBhdXRob3JpdHkgcm9vdCwgZXZlbiB3aGVuIGl0IHN0aWxsIGNvbnRhaW5zIGEgY29tcGF0aWJsZSBDb250cmFjdCBDIHZhbGlkYXRvci4KKy8vIFRoaXMgaXMgdGhlIGNoZWFwIG1haW50YWluZWQgZmFsc2lmaWVyIHRoYXQga2lsbHMgbXV0YXRpb24tYXVkaXQgc3Vydml2b3IgTTAxLgorY29uc3Qgd3JvbmdDQXV0aG9yaXR5UmVzdWx0ID0gcnVuQ2xpKHsKKyAgY29udHJhY3RDUGF0aDogY2Fub25pY2FsUGF0aCwKKyAgY29udHJhY3RDU2hhOiBjYW5vbmljYWxTaGEsCisgIGV4cGVjdGVkQlBhdGg6IGNhbm9uaWNhbEV4cGVjdGVkQlBhdGgsCisgIHBvbGljeTogYCR7Q0FVU0FMX0JBU0lTX0NJVEFUSU9OX1BPTElDWS5pZH1AJHtDQVVTQUxfQkFTSVNfQ0lUQVRJT05fUE9MSUNZLnZlcnNpb259YCwKKyAgY29udGV4dFBhdGg6IGNhdXNhbENvbnRleHRQYXRoLAorICBjb250cmFjdENSb290OiBDT05UUkFDVF9EX1JPT1QsCit9KTsKK2Fzc2VydC5ub3RFcXVhbCh3cm9uZ0NBdXRob3JpdHlSZXN1bHQuc3RhdHVzLCAwKTsKK2Fzc2VydC5lcXVhbChCdWZmZXIuZnJvbSh3cm9uZ0NBdXRob3JpdHlSZXN1bHQuc3Rkb3V0IHx8IEJ1ZmZlci5hbGxvYygwKSkubGVuZ3RoLCAwKTsKK2Fzc2VydC5lcXVhbChzdGRlcnJKc29uKHdyb25nQ0F1dGhvcml0eVJlc3VsdCkuY29kZSwgImF1dGhvcml0eV9pZGVudGl0eV9taXNtYXRjaCIpOworCiBjb25zdCB1bmtub3duUG9saWN5UmVzdWx0ID0gcnVuQ2xpKHsKICAgY29udHJhY3RDUGF0aDogY2Fub25pY2FsUGF0aCwKICAgY29udHJhY3RDU2hhOiBjYW5vbmljYWxTaGEsCkBAIC0zMDcsNiArMzMwLDcgQEAgY29uc3Qgc3VtbWFyeSA9IHsKICAgYmFzaXNfaG9sZDogdHJ1ZSwKICAgZXZhbHVhdGlvbl9mYWlsZWRfaXNfdmFsaWRfZGVjaXNpb246IHRydWUsCiAgIHdyb25nX2NvbnRyYWN0X2NfaWRlbnRpdHlfcmVqZWN0ZWQ6IHRydWUsCisgIHdyb25nX2NvbnRyYWN0X2NfYXV0aG9yaXR5X3JlamVjdGVkOiB0cnVlLAogICB1bmtub3duX3BvbGljeV9yZWplY3RlZDogdHJ1ZSwKICAgdGFyZ2V0X3N1YnN0aXR1dGlvbl9yZWplY3RlZDogdHJ1ZSwKICAgd3JvbmdfY29udHJhY3RfZF9hdXRob3JpdHlfcmVqZWN0ZWQ6IHRydWUsCg=="
+  },
+  "verification_runs": [
+    {
+      "id": "required-ci",
+      "run_id": "34430551382",
+      "head_sha": "ff4783aa55e63f3ca098d2f54884b43b96fee31f",
+      "conclusion": "success",
+      "jobs": [
+        "JavaScript Tests:success",
+        "Path & Secret Leak Audit:success"
+      ]
+    },
+    {
+      "id": "contract-first-cli-conformance",
+      "run_id": "34430551350",
+      "head_sha": "ff4783aa55e63f3ca098d2f54884b43b96fee31f",
+      "conclusion": "success",
+      "jobs": [
+        "evaluate-cli-conformance:success"
+      ]
+    }
+  ]
+}
