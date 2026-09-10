@@ -1,0 +1,1 @@
+{"base_contract_c_version":"1.0.0","base_schema_blob":"b0369de9b5c156322d6787261bbc7658a3b33781","changes":[{"path":"properties.contract_c_version.const","value":"research-non-deciding-rc0"},{"path":"$defs.contribution.properties.channel.enum","value":["support","counterevidence","non_deciding"]}],"research_only":true}

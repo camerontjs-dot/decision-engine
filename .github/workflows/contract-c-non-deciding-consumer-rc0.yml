@@ -1,0 +1,154 @@
+name: Contract C Non-Deciding Consumer RC0
+
+on:
+  push:
+    branches:
+      - research/contract-c-non-deciding-consumer-rc0-20260910
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-repo-consumer:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Decision research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact Decision base, frozen handoff, and research-only surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 358c2bb20f490bf25e808434394b26a70a16a123 HEAD
+          test "$(git hash-object src/contractCIngress.js)" = "f57a8067dadc04afb459f1d0342b2b786ec775e6"
+          test "$(git hash-object src/contractCDecision.js)" = "3529b75f75936fffb9b2d9e2972cb7117b526661"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/handoff/SHADOW_SPEC.md)" = "d98d2dac12b6639d5c76d267de3e337cd8d1faf7"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/handoff/schema-delta.json)" = "0b1edf9ebdf1c7508306ffc51b703650dac9fdc4"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/handoff/contract-b-index.json)" = "4de40713482a1fc5a075a230a61e19acc25afbd9"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/handoff/valid-shadow.json)" = "14e88cbc691f7eba9366b4bf88611ef834637f27"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/consumer.mjs)" = "9563a581cddb2eeefb9b11ccab88fc2d5e00a527"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/evaluate.mjs)" = "89a4a2901045c3d454c517de0600222b56e4f11e"
+          test "$(git hash-object research/contract-c-non-deciding-consumer-rc0/maintained-controls.mjs)" = "3419a9cd559b3e09752d48c16986e31fac0771bf"
+          changed="$(git diff --name-only 358c2bb20f490bf25e808434394b26a70a16a123...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Ev '^(research/contract-c-non-deciding-consumer-rc0/|\.github/workflows/contract-c-non-deciding-consumer-rc0\.yml$)' | grep -q .; then
+            echo 'mutation escaped preregistered Decision research surface' >&2
+            exit 1
+          fi
+
+      - name: Verify consumer does not import producer semantic code
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            research/contract-c-non-deciding-consumer-rc0/consumer.mjs \
+            research/contract-c-non-deciding-consumer-rc0/evaluate.mjs; do
+            ! grep -Eqi '(apparatus-contracts|claim-audit-lab|validators/contract_c|cal_temporal|bound_projection|bound_relation|_deps)' "$f"
+          done
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Compile research consumer
+        run: |
+          node --check research/contract-c-non-deciding-consumer-rc0/consumer.mjs
+          node --check research/contract-c-non-deciding-consumer-rc0/evaluate.mjs
+          node --check research/contract-c-non-deciding-consumer-rc0/maintained-controls.mjs
+
+      - name: Execute independent shadow consumer and hostile controls
+        run: node research/contract-c-non-deciding-consumer-rc0/evaluate.mjs
+
+      - name: Checkout exact released Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+          path: _deps/contract-c
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify released Contract C authority root
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _deps/contract-c rev-parse HEAD)" = "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+          test "$(git -C _deps/contract-c rev-parse refs/tags/contract-c-v1.0.0)" = "6bd135a948e407212b2e77ec18ac5c402f93565e"
+          test "$(git -C _deps/contract-c rev-parse refs/tags/contract-c-v1.0.0^{})" = "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+          test "$(git -C _deps/contract-c hash-object validators/contract_c.py)" = "9c75ccfbf2223578a8d1a7bf0c39673b394fbea4"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install released validator dependencies
+        run: python -m pip install 'pydantic>=2,<3' 'rfc8785==0.1.4'
+
+      - name: Execute maintained Decision ingress controls
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_deps/contract-c
+          PYTHON: python
+        run: node research/contract-c-non-deciding-consumer-rc0/maintained-controls.mjs
+
+      - name: Run ordinary maintained JavaScript regression surface
+        run: |
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - name: Freeze terminal consumer disposition
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = 'build/contract-c-non-deciding-consumer-rc0';
+          const local = JSON.parse(fs.readFileSync(path.join(root, 'CONSUMER_EVALUATION.json'), 'utf8'));
+          const maintained = JSON.parse(fs.readFileSync(path.join(root, 'MAINTAINED_CONTROLS.json'), 'utf8'));
+          const localPass = Object.values(local.checks).every(Boolean);
+          const maintainedPass = Object.values(maintained.checks).every(Boolean);
+          const result = {
+            research_disposition: localPass && maintainedPass
+              ? 'SUPPORTED_BOUNDED_CROSS_REPO_CONSUMER'
+              : 'FALSIFIED_CONSUMER_SEAM',
+            decision_engine_base: '358c2bb20f490bf25e808434394b26a70a16a123',
+            apparatus_handoff_receipt: 'ad1ffbd7906a7cf34cce5afa906a5797cd4a14ff',
+            handoff_sha256: 'sha256:325962ebcdbf6af836bb6193a451524ccd40b4d10f2394ff9f703fbfce1ec1e3',
+            result_set_id: 'result-set:4483272c4f6fbd9cb2362be7e3174bbd00aff3cf761d6c374897f3478818c9f0',
+            local_consumer_checks_pass: localPass,
+            maintained_controls_pass: maintainedPass,
+            reconstructed_passages: local.observed.causal_passages,
+            reconstructed_channels: local.observed.causal_channels,
+            reconstructed_causal_form: local.observed.causal_form,
+            policy_core: local.observed.policy_core,
+            released_1_0_shadow_rejection: maintained.observed.shadow_rejection_code,
+            independence_scope: 'cross-repository implementation; frozen byte handoff; no producer-code dependency; not fresh-human/model clean-room',
+            authorization_evaluated: false,
+            production_change_authorized: false,
+          };
+          fs.writeFileSync(path.join(root, 'TERMINAL.json'), JSON.stringify(result, null, 2) + '\n');
+          console.log(JSON.stringify(result));
+          if (result.research_disposition !== 'SUPPORTED_BOUNDED_CROSS_REPO_CONSUMER') process.exit(1);
+          NODE
+
+      - name: Package consumer evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/contract-c-non-deciding-consumer-rc0/PREREGISTRATION.md build/contract-c-non-deciding-consumer-rc0/
+          cp -R research/contract-c-non-deciding-consumer-rc0/handoff build/contract-c-non-deciding-consumer-rc0/HANDOFF
+          tar -czf contract-c-non-deciding-consumer-rc0-${GITHUB_RUN_ID}.tar.gz -C build contract-c-non-deciding-consumer-rc0
+
+      - name: Upload consumer evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-non-deciding-consumer-rc0-${{ github.run_id }}
+          path: contract-c-non-deciding-consumer-rc0-${{ github.run_id }}.tar.gz
+          if-no-files-found: error
