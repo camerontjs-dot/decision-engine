@@ -191,7 +191,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node research/cross-producer-policy-dependency-matrix/run_matrix.mjs \
+          node research/cross-producer-policy-dependency-matrix/run_matrix_v2.mjs \
             --manifest build/matrix-variants/variants-manifest.json \
             --contract-c-authority _deps/apparatus-c \
             --contract-d-authority _deps/apparatus-d \
