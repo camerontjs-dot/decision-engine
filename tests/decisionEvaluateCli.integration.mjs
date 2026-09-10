@@ -37,7 +37,15 @@ function writeRaw(name, raw) {
   return path;
 }
 
-function runCli({ contractCPath, contractCSha, expectedBPath, policy, contextPath, contractDRoot = CONTRACT_D_ROOT }) {
+function runCli({
+  contractCPath,
+  contractCSha,
+  expectedBPath,
+  policy,
+  contextPath,
+  contractCRoot = CONTRACT_C_ROOT,
+  contractDRoot = CONTRACT_D_ROOT,
+}) {
   return spawnSync(
     process.execPath,
     [
@@ -47,7 +55,7 @@ function runCli({ contractCPath, contractCSha, expectedBPath, policy, contextPat
       "--contract-c-sha256",
       contractCSha,
       "--contract-c-authority",
-      CONTRACT_C_ROOT,
+      contractCRoot,
       "--contract-d-authority",
       contractDRoot,
       "--expected-contract-b",
@@ -206,7 +214,7 @@ assertCanonicalUnderExactD(missingDecision.raw);
 assert.deepEqual(missingDecision.value.evaluation, { state: "failed" });
 assert.equal("effect" in missingDecision.value, false);
 
-// Fail-closed transport, policy, target, and Contract D authority controls emit no Decision bytes.
+// Fail-closed transport, authority, policy, target, and Contract D controls emit no Decision bytes.
 const wrongShaResult = runCli({
   contractCPath: canonicalPath,
   contractCSha: `sha256:${"0".repeat(64)}`,
@@ -217,6 +225,21 @@ const wrongShaResult = runCli({
 assert.notEqual(wrongShaResult.status, 0);
 assert.equal(Buffer.from(wrongShaResult.stdout || Buffer.alloc(0)).length, 0);
 assert.equal(stderrJson(wrongShaResult).code, "contract_c_whole_object_mismatch");
+
+// A different exact apparatus-contracts checkout is not interchangeable with the released
+// Contract C authority root, even when it still contains a compatible Contract C validator.
+// This is the cheap maintained falsifier that kills mutation-audit survivor M01.
+const wrongCAuthorityResult = runCli({
+  contractCPath: canonicalPath,
+  contractCSha: canonicalSha,
+  expectedBPath: canonicalExpectedBPath,
+  policy: `${CAUSAL_BASIS_CITATION_POLICY.id}@${CAUSAL_BASIS_CITATION_POLICY.version}`,
+  contextPath: causalContextPath,
+  contractCRoot: CONTRACT_D_ROOT,
+});
+assert.notEqual(wrongCAuthorityResult.status, 0);
+assert.equal(Buffer.from(wrongCAuthorityResult.stdout || Buffer.alloc(0)).length, 0);
+assert.equal(stderrJson(wrongCAuthorityResult).code, "authority_identity_mismatch");
 
 const unknownPolicyResult = runCli({
   contractCPath: canonicalPath,
@@ -307,6 +330,7 @@ const summary = {
   basis_hold: true,
   evaluation_failed_is_valid_decision: true,
   wrong_contract_c_identity_rejected: true,
+  wrong_contract_c_authority_rejected: true,
   unknown_policy_rejected: true,
   target_substitution_rejected: true,
   wrong_contract_d_authority_rejected: true,
