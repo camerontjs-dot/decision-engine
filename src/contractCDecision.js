@@ -1,4 +1,4 @@
-import { exportContractD } from "./contractD.js";
+import { materializeBoundDecision } from "./decisionMaterializer.js";
 import {
   CONTRACT_C_AUTHORITY,
   ContractCDecisionError,
@@ -109,14 +109,16 @@ function buildDecision(contractC, exactContractCSha256, decisionContext) {
   );
 
   if (!proposition) {
-    return exportContractD({
-      input_authority: inputAuthority,
+    return materializeBoundDecision({
+      inputAuthority,
       policy,
       target,
-      evaluation: { state: "failed" },
-      metadata: {
-        reason_codes: ["target_proposition_not_found"],
-        diagnostics: { proposition_id: decisionContext.proposition_id },
+      decisionFragment: {
+        evaluation: { state: "failed" },
+        metadata: {
+          reason_codes: ["target_proposition_not_found"],
+          diagnostics: { proposition_id: decisionContext.proposition_id },
+        },
       },
     });
   }
@@ -139,15 +141,17 @@ function buildDecision(contractC, exactContractCSha256, decisionContext) {
   const disposition = holdReason ? "hold" : "clear";
   const reasonCodes = holdReason ? [holdReason] : ["contract_c_supported"];
 
-  return exportContractD({
-    input_authority: inputAuthority,
+  return materializeBoundDecision({
+    inputAuthority,
     policy,
     target,
-    evaluation: { state: "completed", disposition },
-    effect: structuredClone(SUPPORTED_CLAIM_VERIFICATION_POLICY.effect),
-    metadata: {
-      reason_codes: reasonCodes,
-      diagnostics: { contract_c_state: stateDiagnostics(contractC, proposition) },
+    decisionFragment: {
+      evaluation: { state: "completed", disposition },
+      effect: structuredClone(SUPPORTED_CLAIM_VERIFICATION_POLICY.effect),
+      metadata: {
+        reason_codes: reasonCodes,
+        diagnostics: { contract_c_state: stateDiagnostics(contractC, proposition) },
+      },
     },
   });
 }
