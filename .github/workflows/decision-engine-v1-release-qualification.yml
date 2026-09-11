@@ -9,6 +9,7 @@ on:
       - 'docs/DECISION_ENGINE_V1_RELEASE_READINESS.md'
       - 'docs/DECISION_ENGINE_EVALUATE_CLI.md'
       - 'docs/DECISION_POLICY_SURFACE.md'
+      - '.github/workflows/contract-first-evaluate-cli-conformance.yml'
       - '.github/workflows/decision-engine-v1-release-qualification.yml'
   workflow_dispatch:
 
@@ -50,7 +51,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           git merge-base --is-ancestor "$RELEASE_BASE" "$CANDIDATE_SHA"
 
-          unexpected="$(git diff --name-only "$RELEASE_BASE" "$CANDIDATE_SHA" | grep -Ev '^(release/metadata\.json|CHANGELOG\.md|docs/DECISION_ENGINE_V1_RELEASE_READINESS\.md|docs/DECISION_ENGINE_EVALUATE_CLI\.md|docs/DECISION_POLICY_SURFACE\.md|\.github/workflows/decision-engine-v1-release-qualification\.yml)$' || true)"
+          unexpected="$(git diff --name-only "$RELEASE_BASE" "$CANDIDATE_SHA" | grep -Ev '^(release/metadata\.json|CHANGELOG\.md|docs/DECISION_ENGINE_V1_RELEASE_READINESS\.md|docs/DECISION_ENGINE_EVALUATE_CLI\.md|docs/DECISION_POLICY_SURFACE\.md|\.github/workflows/contract-first-evaluate-cli-conformance\.yml|\.github/workflows/decision-engine-v1-release-qualification\.yml)$' || true)"
           if [ -n "$unexpected" ]; then
             echo "Unexpected release-candidate changes:"
             printf '%s\n' "$unexpected"
