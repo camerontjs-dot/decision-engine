@@ -27,6 +27,8 @@ env:
   CONTRACT_D_TAG: contract-d-v1.0.0
   CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
   PRIOR_B_APERTURE_HEAD: 570104216ef104ea8d3ba00f9383402b9c2e3154
+  RESEARCH_BRANCH_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  WORKFLOW_SUBJECT_SHA: ${{ github.sha }}
   PRESSURE_OUTPUT_DIR: ${{ github.workspace }}/build/v1-pressure-rc0
 
 jobs:
@@ -191,7 +193,8 @@ jobs:
           gaps = json.loads((root / 'capability-gap-map.json').read_text())
           receipt = {
               'status': 'PASS',
-              'research_head': os.environ['GITHUB_SHA'],
+              'research_branch_head': os.environ['RESEARCH_BRANCH_HEAD'],
+              'workflow_subject_sha': os.environ['WORKFLOW_SUBJECT_SHA'],
               'decision_engine_release': os.environ['DE_RELEASE'],
               'decision_engine_tag': os.environ['DE_TAG'],
               'published_release_archive_sha256': 'sha256:' + os.environ['DE_RELEASE_ARCHIVE_SHA256'],
@@ -223,7 +226,7 @@ jobs:
       - name: Upload RC0 evidence
         uses: actions/upload-artifact@v4
         with:
-          name: decision-engine-v1-pressure-rc0-${{ github.sha }}
+          name: decision-engine-v1-pressure-rc0-${{ env.RESEARCH_BRANCH_HEAD }}
           path: build/v1-pressure-rc0/
           if-no-files-found: error
           retention-days: 90
