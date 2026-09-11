@@ -11,6 +11,8 @@ from validators.contract_d_core import canonical_json_bytes, semantic_identity, 
 
 output_dir = Path(os.environ.get("PRESSURE_OUTPUT_DIR", "build/v1-pressure-rc0"))
 index = json.loads((output_dir / "decision-index.json").read_text())
+failed_index = json.loads((output_dir / "failed-decision-index.json").read_text())
+all_rows = index + failed_index
 
 counts = {
     "candidate_for_authorization": 0,
@@ -18,7 +20,7 @@ counts = {
     "evaluation_failed": 0,
 }
 
-for row in index:
+for row in all_rows:
     raw = Path(row["path"]).read_bytes()
     decision = json.loads(raw)
     validate_decision(decision)
@@ -83,6 +85,10 @@ for row in index:
     )
     assert consume(decision, wrong_authority)["outcome"] == "not_applicable"
 
+# This assertion exists specifically to prevent the first-cut evaluator defect from recurring.
+assert counts["evaluation_failed"] == len(failed_index)
+assert counts["evaluation_failed"] >= 2
+
 # Metadata is explicitly non-authoritative under Contract D semantic identity.
 representative = json.loads(Path(index[0]["path"]).read_text())
 metadata_variant = copy.deepcopy(representative)
@@ -108,11 +114,14 @@ assert consume(effect_variant, original_expectation)["outcome"] == "not_applicab
 
 receipt = {
     "status": "PASS",
-    "decision_count": len(index),
+    "decision_count": len(all_rows),
+    "ordinary_decision_count": len(index),
+    "failed_control_count": len(failed_index),
     "outcomes": counts,
     "clear_is_only_candidate_for_authorization": True,
     "hold_does_not_escalate": True,
     "failed_does_not_escalate": True,
+    "failed_outcome_observed": counts["evaluation_failed"] >= 2,
     "wrong_operation_non_applicable": True,
     "wrong_target_non_applicable": True,
     "wrong_authority_non_applicable": True,
