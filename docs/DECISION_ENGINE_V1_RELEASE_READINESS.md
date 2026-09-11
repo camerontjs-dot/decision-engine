@@ -1,6 +1,6 @@
 # Decision Engine V1 release-readiness record
 
-Status: release qualification in progress. Release authority remains withheld. This record does not authorize an immutable tag, GitHub Release, package publication, Contract mutation, Authorization, or execution.
+Status: release-qualified candidate. Release authority remains withheld. This record does not authorize an immutable tag, GitHub Release, package publication, Contract mutation, Authorization, or execution.
 
 ## Exact baseline
 
