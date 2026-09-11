@@ -1,6 +1,6 @@
 # Decision Engine Contract C policy surface
 
-**Status:** promotion candidate; this document describes the maintained surface proposed by the accompanying PR and does not itself authorize release or downstream execution.
+**Status:** maintained V1 policy surface. This document does not itself authorize a repository release, downstream Authorization, or execution.
 
 ## Boundary
 

@@ -1,6 +1,6 @@
 # Decision Engine evaluate invocation surface
 
-**Status:** stacked engineering candidate. This surface depends on the two-policy promotion candidate and does not authorize release, Authorization, execution, or mutation.
+**Status:** maintained V1 invocation surface. This document does not itself authorize a repository release, operational Authorization, execution, or mutation.
 
 ## Purpose
 

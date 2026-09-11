@@ -1,0 +1,290 @@
+name: Decision Engine v1.0.0 release qualification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'release/metadata.json'
+      - 'CHANGELOG.md'
+      - 'docs/DECISION_ENGINE_V1_RELEASE_READINESS.md'
+      - 'docs/DECISION_ENGINE_EVALUATE_CLI.md'
+      - 'docs/DECISION_POLICY_SURFACE.md'
+      - '.github/workflows/contract-first-evaluate-cli-conformance.yml'
+      - '.github/workflows/decision-engine-v1-release-qualification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_VERSION: 1.0.0
+  RELEASE_BASE: 97994fa691992d74778a5c05cf22484fec63bed1
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  CONTRACT_D_CORE_BLOB: 564dcde5677df5ac8f86f21dc0ffd1692f44c9f0
+  CONTRACT_D_EFFECT_REGISTRY_BLOB: a40f4f4447470654bdc16d852f5927189ae30cc5
+
+jobs:
+  qualify-release:
+    name: Exact-head v1.0.0 release qualification
+    runs-on: ubuntu-24.04
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Checkout exact release candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          fetch-depth: 0
+
+      - name: Verify exact candidate and release-only delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor "$RELEASE_BASE" "$CANDIDATE_SHA"
+
+          unexpected="$(git diff --name-only "$RELEASE_BASE" "$CANDIDATE_SHA" | grep -Ev '^(release/metadata\.json|CHANGELOG\.md|docs/DECISION_ENGINE_V1_RELEASE_READINESS\.md|docs/DECISION_ENGINE_EVALUATE_CLI\.md|docs/DECISION_POLICY_SURFACE\.md|\.github/workflows/contract-first-evaluate-cli-conformance\.yml|\.github/workflows/decision-engine-v1-release-qualification\.yml)$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected release-candidate changes:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Verify version metadata and public claim state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          metadata = json.loads(Path('release/metadata.json').read_text())
+          assert metadata == {
+              'component': 'decision-engine',
+              'version': '1.0.0',
+              'release_channel': 'normal',
+              'public_compatibility_surface': 'bounded-contract-c-to-decision-to-contract-d',
+              'contract_c_version': '1.0.0',
+              'contract_d_version': '1.0.0',
+          }
+          changelog = Path('CHANGELOG.md').read_text()
+          assert '## 1.0.0 — release candidate' in changelog
+          assert 'immutable `v1.0.0` tag and GitHub Release' in changelog
+          cli = Path('docs/DECISION_ENGINE_EVALUATE_CLI.md').read_text()
+          policy = Path('docs/DECISION_POLICY_SURFACE.md').read_text()
+          assert '**Status:** maintained V1 invocation surface.' in cli
+          assert '**Status:** maintained V1 policy surface.' in policy
+          assert 'stacked engineering candidate' not in cli
+          assert '**Status:** promotion candidate' not in policy
+          readiness = Path('docs/DECISION_ENGINE_V1_RELEASE_READINESS.md').read_text()
+          assert 'Release authority remains withheld.' in readiness
+          assert 'Neither the implementation merge `247a8bc5...` nor baseline `97994fa6...` should be tagged directly' in readiness
+          PY
+
+      - name: Checkout exact Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout frozen real-CAL Contract C evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: _contract_c_rc1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact Contract D validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './_contract_d[dev]'
+
+      - name: Verify immutable external authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d hash-object validators/contract_d_core.py)" = "$CONTRACT_D_CORE_BLOB"
+          test "$(git -C _contract_d hash-object schema/contract-d/1.0.0/effect-registry.json)" = "$CONTRACT_D_EFFECT_REGISTRY_BLOB"
+
+      - name: Run binding-preserving materializer controls
+        run: node --test tests/decisionMaterializer.test.mjs
+
+      - name: Run exact V1 and maintained policy cohorts
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          DECISION_V1_QUALIFICATION_OUTPUT_DIR: ${{ github.workspace }}/build/release-v1-qualification
+          CONTRACT_C_TO_D_OUTPUT_DIR: ${{ github.workspace }}/build/release-contract-c-to-d
+          CONTRACT_C_BASIS_CITATION_OUTPUT_DIR: ${{ github.workspace }}/build/release-contract-c-basis
+          PYTHON: python
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/decisionV1Qualification.integration.mjs
+          node tests/contractCToContractD.integration.mjs
+          node tests/contractCBasisCitation.integration.mjs
+
+      - name: Run exact-authority CLI cohort
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          DECISION_EVALUATE_CLI_OUTPUT_DIR: ${{ github.workspace }}/build/release-cli
+          PYTHON: python
+        run: node tests/decisionEvaluateCli.integration.mjs
+
+      - name: Independently consume release-candidate CLI outputs
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from validators.contract_d_consume import ApplicabilityExpectation, consume
+          from validators.contract_d_core import canonical_json_bytes, validate_decision
+
+          root = Path('build/release-cli')
+          expected = {
+              'basis-clear.contract-d.json': ('candidate_for_authorization', 'knowledge.cite_as_evidence', {}),
+              'basis-hold.contract-d.json': ('hold', 'knowledge.cite_as_evidence', {}),
+              'basis-failed.contract-d.json': ('evaluation_failed', 'knowledge.cite_as_evidence', {}),
+              'supported-clear.contract-d.json': ('candidate_for_authorization', 'knowledge.add_verified_tag', {'scope': 'claim'}),
+          }
+          for name, (outcome, operation, params) in expected.items():
+              raw = (root / name).read_bytes()
+              decision = json.loads(raw)
+              validate_decision(decision)
+              assert canonical_json_bytes(decision) == raw
+              exp = ApplicabilityExpectation(
+                  decision['input_authority'],
+                  decision['policy'],
+                  decision['target'],
+                  operation,
+                  params,
+              )
+              assert consume(decision, exp)['outcome'] == outcome
+          PY
+
+      - name: Build deterministic release source archive twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release
+          prefix="decision-engine-v${RELEASE_VERSION}/"
+          for n in one two; do
+            git archive --format=tar --prefix="$prefix" "$CANDIDATE_SHA" > "build/release/source-$n.tar"
+            gzip -n -c "build/release/source-$n.tar" > "build/release/source-$n.tar.gz"
+          done
+          cmp build/release/source-one.tar.gz build/release/source-two.tar.gz
+          mv build/release/source-one.tar.gz "build/release/decision-engine-v${RELEASE_VERSION}-source.tar.gz"
+          rm build/release/source-one.tar build/release/source-two.tar build/release/source-two.tar.gz
+          (cd build/release && sha256sum "decision-engine-v${RELEASE_VERSION}-source.tar.gz" > SHA256SUMS)
+
+      - name: Smoke-test from extracted release artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke="$RUNNER_TEMP/decision-engine-release-smoke"
+          rm -rf "$smoke"
+          mkdir -p "$smoke"
+          tar -xzf "build/release/decision-engine-v${RELEASE_VERSION}-source.tar.gz" -C "$smoke"
+          cd "$smoke/decision-engine-v${RELEASE_VERSION}"
+          test "$(python -c "import json; print(json.load(open('release/metadata.json'))['version'])")" = "$RELEASE_VERSION"
+          node --test tests/decisionMaterializer.test.mjs
+          APPARATUS_CONTRACT_C_DIR="${{ github.workspace }}/_contract_c" \
+          APPARATUS_CONTRACT_D_DIR="${{ github.workspace }}/_contract_d" \
+          CONTRACT_C_RC1_EVIDENCE_DIR="${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus" \
+          DECISION_EVALUATE_CLI_OUTPUT_DIR="$RUNNER_TEMP/release-artifact-cli" \
+          PYTHON=python \
+          node tests/decisionEvaluateCli.integration.mjs
+
+      - name: Write release qualification receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ARCHIVE_SHA="$(cut -d' ' -f1 build/release/SHA256SUMS)"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          receipt = {
+              'status': 'PASS',
+              'component': 'decision-engine',
+              'version': os.environ['RELEASE_VERSION'],
+              'candidate_sha': os.environ['CANDIDATE_SHA'],
+              'release_base': os.environ['RELEASE_BASE'],
+              'source_archive_sha256': 'sha256:' + os.environ['ARCHIVE_SHA'],
+              'deterministic_archive_rebuild': True,
+              'artifact_smoke_test': True,
+              'contract_c_release': os.environ['CONTRACT_C_RELEASE'],
+              'contract_d_release': os.environ['CONTRACT_D_RELEASE'],
+              'exact_v1_qualification': True,
+              'contract_c_to_d_conformance': True,
+              'causal_basis_policy_conformance': True,
+              'exact_authority_cli_conformance': True,
+              'downstream_contract_d_consumption': True,
+              'tag_created': False,
+              'github_release_created': False,
+              'authorization_performed': False,
+              'execution_performed': False,
+              'release_authority': 'withheld',
+          }
+          Path('build/release/release-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Verify exact candidate remained unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+
+      - name: Upload release qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: decision-engine-v1.0.0-release-candidate-${{ env.CANDIDATE_SHA }}
+          path: |
+            build/release/
+            build/release-v1-qualification/
+            build/release-contract-c-to-d/
+            build/release-contract-c-basis/
+            build/release-cli/
+          if-no-files-found: error
+          retention-days: 90
