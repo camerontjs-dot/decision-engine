@@ -1,0 +1,8 @@
+{
+  "component": "decision-engine",
+  "version": "1.0.0",
+  "release_channel": "normal",
+  "public_compatibility_surface": "bounded-contract-c-to-decision-to-contract-d",
+  "contract_c_version": "1.0.0",
+  "contract_d_version": "1.0.0"
+}
