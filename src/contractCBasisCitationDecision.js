@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { exportContractD } from "./contractD.js";
+import { materializeBoundDecision } from "./decisionMaterializer.js";
 import {
   ContractCDecisionError,
   contractCInputAuthority,
@@ -180,14 +180,16 @@ function buildDecision(contractC, exactContractCSha256, decisionContext) {
     (item) => item.proposition.proposition_id === decisionContext.proposition_id,
   );
   if (!proposition) {
-    return exportContractD({
-      input_authority: inputAuthority,
+    return materializeBoundDecision({
+      inputAuthority,
       policy,
       target,
-      evaluation: { state: "failed" },
-      metadata: {
-        reason_codes: ["target_proposition_not_found"],
-        diagnostics: { proposition_id: decisionContext.proposition_id },
+      decisionFragment: {
+        evaluation: { state: "failed" },
+        metadata: {
+          reason_codes: ["target_proposition_not_found"],
+          diagnostics: { proposition_id: decisionContext.proposition_id },
+        },
       },
     });
   }
@@ -196,16 +198,18 @@ function buildDecision(contractC, exactContractCSha256, decisionContext) {
     (item) => item.contribution_id === decisionContext.contribution_id,
   );
   if (!contribution) {
-    return exportContractD({
-      input_authority: inputAuthority,
+    return materializeBoundDecision({
+      inputAuthority,
       policy,
       target,
-      evaluation: { state: "failed" },
-      metadata: {
-        reason_codes: ["target_contribution_not_found"],
-        diagnostics: {
-          proposition_id: decisionContext.proposition_id,
-          contribution_id: decisionContext.contribution_id,
+      decisionFragment: {
+        evaluation: { state: "failed" },
+        metadata: {
+          reason_codes: ["target_contribution_not_found"],
+          diagnostics: {
+            proposition_id: decisionContext.proposition_id,
+            contribution_id: decisionContext.contribution_id,
+          },
         },
       },
     });
@@ -216,27 +220,29 @@ function buildDecision(contractC, exactContractCSha256, decisionContext) {
   const holdReason = reasonForHold(contractC, proposition, contribution);
   const disposition = holdReason ? "hold" : "clear";
 
-  return exportContractD({
-    input_authority: inputAuthority,
+  return materializeBoundDecision({
+    inputAuthority,
     policy,
     target,
-    evaluation: { state: "completed", disposition },
-    effect: structuredClone(CAUSAL_BASIS_CITATION_POLICY.effect),
-    metadata: {
-      reason_codes: [holdReason || "contract_c_contribution_in_causal_basis"],
-      diagnostics: {
-        result_execution: contractC.execution.state,
-        proposition_execution: proposition.execution.state,
-        proposition_completion:
-          proposition.execution.state === "completed" ? proposition.execution.completion : null,
-        contribution_channel: contribution.channel,
-        basis_membership:
-          proposition.execution.state === "completed" && proposition.conclusion
-            ? proposition.conclusion.basis_members.some(
-                (member) =>
-                  member.namespace === "contribution" && member.id === contribution.contribution_id,
-              )
-            : false,
+    decisionFragment: {
+      evaluation: { state: "completed", disposition },
+      effect: structuredClone(CAUSAL_BASIS_CITATION_POLICY.effect),
+      metadata: {
+        reason_codes: [holdReason || "contract_c_contribution_in_causal_basis"],
+        diagnostics: {
+          result_execution: contractC.execution.state,
+          proposition_execution: proposition.execution.state,
+          proposition_completion:
+            proposition.execution.state === "completed" ? proposition.execution.completion : null,
+          contribution_channel: contribution.channel,
+          basis_membership:
+            proposition.execution.state === "completed" && proposition.conclusion
+              ? proposition.conclusion.basis_members.some(
+                  (member) =>
+                    member.namespace === "contribution" && member.id === contribution.contribution_id,
+                )
+              : false,
+        },
       },
     },
   });
