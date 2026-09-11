@@ -97,6 +97,26 @@ The exact intended release tree must demonstrate:
 - smoke execution from the extracted release archive rather than from the working checkout;
 - generated release receipt with release/tag creation explicitly false during qualification.
 
+## Qualification deviation preserved
+
+The first release-candidate head exposed a stale evaluator assumption in the pre-existing `Contract-first Decision evaluate CLI conformance` workflow.
+
+Observed failure:
+
+- run `34608423144` failed before CLI execution in `Verify exact authority and stacked scope`;
+- the workflow still diff-locked policy implementation and `docs/DECISION_POLICY_SURFACE.md` to engineering base `a29e21da6f9d8a67dcd0f2d5181f1ac526f835cc`;
+- that base predates the promoted V1 binding-preserving materializer extraction, so the gate treated the already-promoted V1 implementation and the release-readiness status correction as forbidden drift;
+- ordinary CI and the independent release qualification on the same head passed, and the two-policy conformance workflow passed.
+
+Disposition:
+
+- do not erase or relabel the failed run;
+- re-anchor the legacy CLI conformance gate to exact maintained production baseline `97994fa691992d74778a5c05cf22484fec63bed1` for runtime/source/test bytes;
+- keep documentation outside that runtime immutability comparison;
+- rerun the complete exact-head release qualification after the correction.
+
+This is evaluator-maintenance evidence, not evidence of a Decision Engine runtime regression.
+
 ## Known limitations carried into release
 
 These remain documented limitations, not hidden gaps:
