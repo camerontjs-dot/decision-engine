@@ -45,7 +45,32 @@ for row in all_rows:
         raise AssertionError(f"unexpected evaluation: {evaluation}")
     counts[outcome] += 1
 
-    # Exact Decision, wrong requested operation is never applicable.
+    # Contract D checks exact authority/policy/target before evaluation state. Therefore these
+    # substitutions are non-applicable for completed and failed Decisions alike.
+    wrong_target_value = copy.deepcopy(decision["target"])
+    wrong_target_value["content_sha256"] = "sha256:" + "f" * 64
+    wrong_target = ApplicabilityExpectation(
+        copy.deepcopy(decision["input_authority"]),
+        copy.deepcopy(decision["policy"]),
+        wrong_target_value,
+        row["operation"],
+        copy.deepcopy(row["params"]),
+    )
+    assert consume(decision, wrong_target)["outcome"] == "not_applicable"
+
+    wrong_authority_value = copy.deepcopy(decision["input_authority"])
+    wrong_authority_value["immutable_id"] = "sha256:" + "e" * 64
+    wrong_authority = ApplicabilityExpectation(
+        wrong_authority_value,
+        copy.deepcopy(decision["policy"]),
+        copy.deepcopy(decision["target"]),
+        row["operation"],
+        copy.deepcopy(row["params"]),
+    )
+    assert consume(decision, wrong_authority)["outcome"] == "not_applicable"
+
+    # Requested operation/effect checks occur only after the failed-evaluation branch.
+    # A FAILED Decision intentionally has no effect to compare and remains evaluation_failed.
     alternate_operation = (
         "knowledge.cite_as_evidence"
         if row["operation"] == "knowledge.add_verified_tag"
@@ -59,31 +84,11 @@ for row in all_rows:
         alternate_operation,
         alternate_params,
     )
-    assert consume(decision, wrong_operation)["outcome"] == "not_applicable"
-
-    # Same logical target id with a changed immutable target hash is non-applicable.
-    wrong_target_value = copy.deepcopy(decision["target"])
-    wrong_target_value["content_sha256"] = "sha256:" + "f" * 64
-    wrong_target = ApplicabilityExpectation(
-        copy.deepcopy(decision["input_authority"]),
-        copy.deepcopy(decision["policy"]),
-        wrong_target_value,
-        row["operation"],
-        copy.deepcopy(row["params"]),
-    )
-    assert consume(decision, wrong_target)["outcome"] == "not_applicable"
-
-    # Changed immutable input authority is non-applicable.
-    wrong_authority_value = copy.deepcopy(decision["input_authority"])
-    wrong_authority_value["immutable_id"] = "sha256:" + "e" * 64
-    wrong_authority = ApplicabilityExpectation(
-        wrong_authority_value,
-        copy.deepcopy(decision["policy"]),
-        copy.deepcopy(decision["target"]),
-        row["operation"],
-        copy.deepcopy(row["params"]),
-    )
-    assert consume(decision, wrong_authority)["outcome"] == "not_applicable"
+    wrong_operation_outcome = consume(decision, wrong_operation)["outcome"]
+    if evaluation == {"state": "failed"}:
+        assert wrong_operation_outcome == "evaluation_failed"
+    else:
+        assert wrong_operation_outcome == "not_applicable"
 
 # This assertion exists specifically to prevent the first-cut evaluator defect from recurring.
 assert counts["evaluation_failed"] == len(failed_index)
@@ -122,7 +127,8 @@ receipt = {
     "hold_does_not_escalate": True,
     "failed_does_not_escalate": True,
     "failed_outcome_observed": counts["evaluation_failed"] >= 2,
-    "wrong_operation_non_applicable": True,
+    "wrong_operation_completed_non_applicable": True,
+    "wrong_operation_failed_remains_evaluation_failed": True,
     "wrong_target_non_applicable": True,
     "wrong_authority_non_applicable": True,
     "effect_substitution_non_applicable": True,
