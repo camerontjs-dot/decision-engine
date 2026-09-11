@@ -26,6 +26,7 @@ env:
   CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
   CONTRACT_D_TAG: contract-d-v1.0.0
   CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  PRIOR_B_APERTURE_HEAD: 570104216ef104ea8d3ba00f9383402b9c2e3154
   PRESSURE_OUTPUT_DIR: ${{ github.workspace }}/build/v1-pressure-rc0
 
 jobs:
@@ -106,6 +107,14 @@ jobs:
           path: _cal
           fetch-depth: 0
 
+      - name: Checkout exact prior Contract-B aperture evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.PRIOR_B_APERTURE_HEAD }}
+          path: _prior_b_aperture
+          fetch-depth: 1
+
       - name: Verify external authority identities
         shell: bash
         run: |
@@ -122,6 +131,8 @@ jobs:
           test "$(git -C _cal rev-parse HEAD)" = "$CAL_RELEASE"
           test "$(git -C _cal rev-parse "refs/tags/$CAL_TAG")" = "$CAL_TAG_OBJECT"
           test "$(git -C _cal rev-parse "$CAL_TAG^{}")" = "$CAL_RELEASE"
+
+          test "$(git -C _prior_b_aperture rev-parse HEAD)" = "$PRIOR_B_APERTURE_HEAD"
 
       - name: Install exact released Python dependencies
         shell: bash
@@ -144,6 +155,21 @@ jobs:
           PYTHON: python
         run: node research/v1-pressure-test-rc0/pressure.mjs
 
+      - name: Generate independent FAILED Decision controls
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/generate_failed_controls.mjs
+
+      - name: Replay known Contract-B internal-reference aperture on published V1
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          PRIOR_B_APERTURE_DIR: ${{ github.workspace }}/_prior_b_aperture
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/known_b_aperture_release_replay.mjs
+
       - name: Independently consume every emitted Decision under exact Contract D
         env:
           PYTHONPATH: ${{ github.workspace }}/_contract_d
@@ -161,6 +187,7 @@ jobs:
           root = Path(os.environ['PRESSURE_OUTPUT_DIR'])
           pressure = json.loads((root / 'pressure-receipt.json').read_text())
           downstream = json.loads((root / 'downstream-contract-d-receipt.json').read_text())
+          aperture = json.loads((root / 'known-contract-b-aperture-release-replay.json').read_text())
           gaps = json.loads((root / 'capability-gap-map.json').read_text())
           receipt = {
               'status': 'PASS',
@@ -174,12 +201,15 @@ jobs:
               'contract_d_release': os.environ['CONTRACT_D_RELEASE'],
               'pressure': pressure,
               'downstream': downstream,
+              'known_contract_b_aperture_release_replay': aperture,
               'capability_gap_count': len(gaps),
+              'first_cut_evaluator_defect_corrected': downstream.get('failed_outcome_observed') is True,
               'maintained_src_scripts_tests_changed': False,
               'contract_mutation': False,
               'authorization_performed': False,
               'execution_performed': False,
           }
+          assert receipt['first_cut_evaluator_defect_corrected']
           (root / 'RC0-RECEIPT.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
           print(json.dumps(receipt, sort_keys=True))
           PY
