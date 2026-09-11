@@ -1,0 +1,89 @@
+name: Research - CAL residual contribution reachability
+
+on:
+  push:
+    branches:
+      - research/cal-residual-reachability-20260907
+  pull_request:
+    paths:
+      - "research/cal-residual-reachability/**"
+      - ".github/workflows/research-cal-residual-reachability.yml"
+      - "src/contractCBasisCitationDecision.js"
+      - "src/contractCIngress.js"
+      - "tests/contractCBasisCitation.integration.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  residual-reachability:
+    runs-on: ubuntu-24.04
+    env:
+      CAL_HEAD: 4b9d69936d8ecdbaac0217561be7a3a821b70522
+      CAL_RUNTIME_BLOB: b36dacf39d158601368b89df8fa66431ce1b4a07
+      CONTRACT_C_HEAD: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install released Contract C validator dependencies
+        run: python3 -m pip install "pydantic>=2.6,<3" "rfc8785==0.1.4"
+
+      - name: Checkout exact CAL and Contract C authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/camerontjs-dot/claim-audit-lab.git _deps/cal
+          git -C _deps/cal checkout "$CAL_HEAD"
+          git clone https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-c
+          git -C _deps/apparatus-c checkout "$CONTRACT_C_HEAD"
+          test "$(git -C _deps/cal rev-parse HEAD)" = "$CAL_HEAD"
+          test "$(git -C _deps/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_HEAD"
+          test "$(git -C _deps/cal hash-object research/cal_research_profile_rc0/runtime.py)" = "$CAL_RUNTIME_BLOB"
+          test "$(git -C _deps/apparatus-c rev-parse refs/tags/contract-c-v1.0.0)" = "6bd135a948e407212b2e77ec18ac5c402f93565e"
+
+      - name: Probe exact frozen CAL producer shape
+        run: |
+          mkdir -p build/cal-residual-reachability
+          python3 research/cal-residual-reachability/probe.py \
+            --cal-root _deps/cal \
+            --apparatus-c _deps/apparatus-c \
+            --out-dir build/cal-residual-reachability
+
+      - name: Pass CAL multi-contribution output through maintained Decision policy
+        run: |
+          node research/cal-residual-reachability/de_probe.mjs \
+            build/cal-residual-reachability/two-supports.contract-c.json \
+            _deps/apparatus-c \
+            build/cal-residual-reachability/DECISION-RESULT.json
+
+      - name: Re-run maintained canonical residual branch integration
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_deps/apparatus-c
+          CONTRACT_C_BASIS_CITATION_OUTPUT_DIR: ${{ github.workspace }}/build/cal-residual-reachability/maintained-policy
+        run: node tests/contractCBasisCitation.integration.mjs
+
+      - name: Assert no maintained Decision source mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --name-only a4425f8eb47449ff6c683222921bbea9483742e2...HEAD -- src/ scripts/ | grep -q .; then
+            echo "research branch modified maintained Decision source" >&2
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cal-de-residual-reachability-${{ github.run_id }}
+          path: build/cal-residual-reachability
+          retention-days: 90
