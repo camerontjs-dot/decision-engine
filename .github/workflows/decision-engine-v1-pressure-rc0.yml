@@ -1,0 +1,232 @@
+name: Research - Decision Engine v1.0.0 pressure test RC0
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/v1-pressure-test-rc0/**'
+      - '.github/workflows/decision-engine-v1-pressure-rc0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DE_RELEASE: 7be709b2141c767c5da89b8b94cf90233c4238fe
+  DE_TAG: v1.0.0
+  DE_TAG_OBJECT: 7835f2f53267843113212abfa0cac6e726242409
+  DE_RELEASE_ARCHIVE_SHA256: c440d5de2a3853db9f4ccc2ba37d273e29ce8d9e71e0d646fc0c20eee0cd5902
+  CAL_RELEASE: 5533bbcf27a3ee3a7d901f7dfc44c241bc558e2c
+  CAL_TAG: v0.5.0
+  CAL_TAG_OBJECT: 193c07178a8d891231746fca97c8c1bef0e9dc3c
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  PRIOR_B_APERTURE_HEAD: 570104216ef104ea8d3ba00f9383402b9c2e3154
+  RESEARCH_BRANCH_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  WORKFLOW_SUBJECT_SHA: ${{ github.sha }}
+  PRESSURE_OUTPUT_DIR: ${{ github.workspace }}/build/v1-pressure-rc0
+
+jobs:
+  pressure-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout research harness
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact Decision Engine release lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "refs/tags/$DE_TAG")" = "$DE_TAG_OBJECT"
+          test "$(git rev-parse "$DE_TAG^{}")" = "$DE_RELEASE"
+          test "$(git merge-base "$DE_RELEASE" HEAD)" = "$DE_RELEASE"
+
+      - name: Download and verify published v1.0.0 release artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/de-release"
+          curl -L --fail --retry 3 \
+            -o "$RUNNER_TEMP/decision-engine-v1.0.0-source.tar.gz" \
+            "https://github.com/camerontjs-dot/decision-engine/releases/download/v1.0.0/decision-engine-v1.0.0-source.tar.gz"
+          observed="$(sha256sum "$RUNNER_TEMP/decision-engine-v1.0.0-source.tar.gz" | awk '{print $1}')"
+          test "$observed" = "$DE_RELEASE_ARCHIVE_SHA256"
+          tar -xzf "$RUNNER_TEMP/decision-engine-v1.0.0-source.tar.gz" -C "$RUNNER_TEMP/de-release"
+          subject="$RUNNER_TEMP/de-release/decision-engine-v1.0.0"
+          test -f "$subject/src/contractCDecisionRuntime.js"
+          test -f "$subject/scripts/decision-engine-evaluate.mjs"
+          echo "DECISION_ENGINE_SUBJECT_DIR=$subject" >> "$GITHUB_ENV"
+          mkdir -p "$PRESSURE_OUTPUT_DIR"
+          printf '%s  %s\n' "$observed" 'decision-engine-v1.0.0-source.tar.gz' > "$PRESSURE_OUTPUT_DIR/release-artifact-SHA256SUMS"
+
+      - name: Prove released runtime is unchanged by research branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -ru src "$DECISION_ENGINE_SUBJECT_DIR/src"
+          diff -ru scripts "$DECISION_ENGINE_SUBJECT_DIR/scripts"
+          diff -ru tests "$DECISION_ENGINE_SUBJECT_DIR/tests"
+          git diff --exit-code "$DE_RELEASE"...HEAD -- src scripts tests release CHANGELOG.md docs/DECISION_ENGINE_EVALUATE_CLI.md docs/DECISION_POLICY_SURFACE.md
+
+      - name: Checkout exact Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout exact CAL v0.5.0 producer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.CAL_RELEASE }}
+          path: _cal
+          fetch-depth: 0
+
+      - name: Checkout exact prior Contract-B aperture evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.PRIOR_B_APERTURE_HEAD }}
+          path: _prior_b_aperture
+          fetch-depth: 1
+
+      - name: Verify external authority identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+          test "$(git -C _cal rev-parse HEAD)" = "$CAL_RELEASE"
+          test "$(git -C _cal rev-parse "refs/tags/$CAL_TAG")" = "$CAL_TAG_OBJECT"
+          test "$(git -C _cal rev-parse "$CAL_TAG^{}")" = "$CAL_RELEASE"
+
+          test "$(git -C _prior_b_aperture rev-parse HEAD)" = "$PRIOR_B_APERTURE_HEAD"
+
+      - name: Install exact released Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ./_cal
+          python -m pip install --disable-pip-version-check -e './_contract_d[dev]'
+
+      - name: Generate fresh Contract C from CAL v0.5.0
+        env:
+          CAL_RELEASE_DIR: ${{ github.workspace }}/_cal
+          PYTHONPATH: ${{ github.workspace }}/_cal/src
+        run: python research/v1-pressure-test-rc0/generate_real_cal_control.py
+
+      - name: Execute released Decision Engine across domain and adversarial matrix
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          REAL_CAL_CONTRACT_C: ${{ github.workspace }}/build/v1-pressure-rc0/real-cal-v0.5.0-contract-c.json
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/pressure.mjs
+
+      - name: Generate independent FAILED Decision controls
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/generate_failed_controls.mjs
+
+      - name: Replay known Contract-B internal-reference aperture on published V1
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          PRIOR_B_APERTURE_DIR: ${{ github.workspace }}/_prior_b_aperture
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/known_b_aperture_release_replay.mjs
+
+      - name: Independently consume every emitted Decision under exact Contract D
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        run: python research/v1-pressure-test-rc0/downstream_contract_d.py
+
+      - name: Write combined RC0 receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ['PRESSURE_OUTPUT_DIR'])
+          pressure = json.loads((root / 'pressure-receipt.json').read_text())
+          downstream = json.loads((root / 'downstream-contract-d-receipt.json').read_text())
+          aperture = json.loads((root / 'known-contract-b-aperture-release-replay.json').read_text())
+          gaps = json.loads((root / 'capability-gap-map.json').read_text())
+          receipt = {
+              'status': 'PASS',
+              'research_branch_head': os.environ['RESEARCH_BRANCH_HEAD'],
+              'workflow_subject_sha': os.environ['WORKFLOW_SUBJECT_SHA'],
+              'decision_engine_release': os.environ['DE_RELEASE'],
+              'decision_engine_tag': os.environ['DE_TAG'],
+              'published_release_archive_sha256': 'sha256:' + os.environ['DE_RELEASE_ARCHIVE_SHA256'],
+              'cal_release': os.environ['CAL_RELEASE'],
+              'cal_tag': os.environ['CAL_TAG'],
+              'contract_c_release': os.environ['CONTRACT_C_RELEASE'],
+              'contract_d_release': os.environ['CONTRACT_D_RELEASE'],
+              'pressure': pressure,
+              'downstream': downstream,
+              'known_contract_b_aperture_release_replay': aperture,
+              'capability_gap_count': len(gaps),
+              'first_cut_evaluator_defect_corrected': downstream.get('failed_outcome_observed') is True,
+              'maintained_src_scripts_tests_changed': False,
+              'contract_mutation': False,
+              'authorization_performed': False,
+              'execution_performed': False,
+          }
+          assert receipt['first_cut_evaluator_defect_corrected']
+          (root / 'RC0-RECEIPT.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Final maintained-source mutation guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$DE_RELEASE"...HEAD -- src scripts tests release CHANGELOG.md docs/DECISION_ENGINE_EVALUATE_CLI.md docs/DECISION_POLICY_SURFACE.md
+
+      - name: Upload RC0 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: decision-engine-v1-pressure-rc0-${{ env.RESEARCH_BRANCH_HEAD }}
+          path: build/v1-pressure-rc0/
+          if-no-files-found: error
+          retention-days: 90
