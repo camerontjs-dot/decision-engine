@@ -1,0 +1,172 @@
+name: Contract C Minimal In-Band Conformance RC1
+
+on:
+  push:
+    branches:
+      - research/contract-c-minimal-in-band-conformance-rc1-20260912
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DECISION_BASE: 7be709b2141c767c5da89b8b94cf90233c4238fe
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_C_RC1_EVIDENCE: 0e0d14471b0ed24382794244468539a723b8b888
+
+jobs:
+  minimal-in-band-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Decision research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout immutable released Contract C authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout frozen real-CAL released Contract C evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.CONTRACT_C_RC1_EVIDENCE }}
+          path: _contract_c_rc1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact released Apparatus validator dependencies
+        run: python -m pip install --disable-pip-version-check -e './_contract_c[dev]'
+
+      - name: Verify base, immutable maintained source, frozen handoff, and bounded research surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$DECISION_BASE" HEAD
+          test "$(git show "$DECISION_BASE:src/contractCIngress.js" | git hash-object --stdin)" = 'f57a8067dadc04afb459f1d0342b2b786ec775e6'
+          test "$(git hash-object src/contractCIngress.js)" = 'f57a8067dadc04afb459f1d0342b2b786ec775e6'
+          test "$(git hash-object src/contractCDecision.js)" = '2225f73eb6eefd83609f0ba19e4786d1267dd527'
+          test "$(git hash-object src/decisionMaterializer.js)" = '1562fb29da6679a0cf894e478cbdd4ae16e21a18'
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+          test "$(git hash-object research/contract-c-minimal-in-band-conformance-rc1/handoff/valid-shadow.json)" = '14e88cbc691f7eba9366b4bf88611ef834637f27'
+          test "$(git hash-object research/contract-c-minimal-in-band-conformance-rc1/handoff/contract-b-index.json)" = '4de40713482a1fc5a075a230a61e19acc25afbd9'
+          changed="$(git diff --name-only "$DECISION_BASE"...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Ev '^(research/contract-c-minimal-in-band-conformance-rc1/|\.github/workflows/contract-c-minimal-in-band-conformance-rc1\.yml$)' | grep -q .; then
+            echo 'mutation escaped research-only boundary' >&2
+            exit 1
+          fi
+
+      - name: Verify consumer independence from prior Decision research implementation and producer code
+        shell: bash
+        run: |
+          set -euo pipefail
+          consumer='research/contract-c-minimal-in-band-conformance-rc1/consumer.mjs'
+          ! grep -Eqi '(contract-c-non-deciding-consumer|contract_c_non_deciding_shadow|contract_c_surface_necessity|claim-audit-lab|cal_v1_candidate|sidecar)' "$consumer"
+          ! grep -En '^[[:space:]]*import .*research/' "$consumer"
+
+      - name: Execute frozen minimal in-band research conformance
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          MINIMAL_IN_BAND_OUTPUT_DIR: ${{ github.workspace }}/build/contract-c-minimal-in-band-conformance-rc1
+          PYTHON: python
+        run: node research/contract-c-minimal-in-band-conformance-rc1/evaluate.mjs
+
+      - name: Verify frozen expected research result
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('build/contract-c-minimal-in-band-conformance-rc1/RESULT.json').read_text())
+          assert result['status'] == 'PASS'
+          assert result['disposition'] == 'SUPPORTED_CURRENT_MAIN_MINIMAL_IN_BAND_CONFORMANCE'
+          observed = result['observed']
+          assert observed['causal_channels'] == ['non_deciding', 'non_deciding']
+          assert observed['causal_passages'] == ['u-a', 'u-b']
+          assert observed['residual_passages'] == []
+          assert observed['causal_form'] == 'independent_sufficient_alternatives'
+          assert observed['policy_equivalent']['disposition'] == 'hold'
+          assert observed['unsafe_mutant_disposition'] == 'clear'
+          assert observed['unsafe_mutant_killed'] is True
+          assert observed['same_members_joint_form_distinct'] is True
+          assert observed['causal_residual_distinguished'] is True
+          assert observed['residual_only_recovered'] is True
+          assert observed['sidecar_specific_fields_required'] is False
+          assert observed['scalar_or_confidence_winner_required'] is False
+          assert observed['maintained_released_ingress_accepts_research_successor'] is False
+          assert all(v in {'rejected', 'detected_as_semantic_change', 'rejected_against_external_profile'} for v in result['hostile_controls'].values())
+          assert result['independence_scope'] == 'supervisor_context_conformance_not_clean_room'
+          assert result['context_free_reproduction_still_required'] is True
+          print(json.dumps({'disposition': result['disposition'], 'unsafe_mutant_killed': True, 'hostile_controls': len(result['hostile_controls'])}, sort_keys=True))
+          PY
+
+      - name: Run maintained Decision V1 ordinary regressions
+        run: |
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node --test tests/decisionMaterializer.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - name: Execute maintained released Contract C 1.0 supported-claim control
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          CONTRACT_C_RC1_EVIDENCE_DIR: ${{ github.workspace }}/_contract_c_rc1/research/contract-c-gate-real-producer-rc1/frozen-evidence/real-cal-corpus
+          CONTRACT_C_TO_D_OUTPUT_DIR: ${{ github.workspace }}/build/maintained-contract-c-to-d
+          PYTHON: python
+        run: node tests/contractCToContractD.integration.mjs
+
+      - name: Verify maintained released control and research boundary did not move
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('build/maintained-contract-c-to-d')
+          clear = json.loads((root / 'clear.json').read_text())
+          hold = json.loads((root / 'hold.json').read_text())
+          summary = json.loads((root / 'integration-summary.json').read_text())
+          assert clear['evaluation'] == {'state': 'completed', 'disposition': 'clear'}
+          assert clear['metadata']['reason_codes'] == ['contract_c_supported']
+          assert hold['evaluation'] == {'state': 'completed', 'disposition': 'hold'}
+          assert summary['status'] == 'PASS'
+          assert summary['clear_reachable'] is True
+          assert summary['hold_reachable'] is True
+          assert summary['wrong_version_rejected'] is True
+          print(json.dumps({'released_supported_control': 'clear', 'released_non_supported_control': 'hold'}))
+          PY
+          test "$(git hash-object src/contractCIngress.js)" = 'f57a8067dadc04afb459f1d0342b2b786ec775e6'
+          test "$(git hash-object src/contractCDecision.js)" = '2225f73eb6eefd83609f0ba19e4786d1267dd527'
+          test "$(git hash-object src/decisionMaterializer.js)" = '1562fb29da6679a0cf894e478cbdd4ae16e21a18'
+
+      - name: Package research evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/contract-c-minimal-in-band-conformance-rc1/PREREGISTRATION.md build/contract-c-minimal-in-band-conformance-rc1/
+          cp research/contract-c-minimal-in-band-conformance-rc1/EXPECTATIONS.json build/contract-c-minimal-in-band-conformance-rc1/
+          cp build/maintained-contract-c-to-d/integration-summary.json build/contract-c-minimal-in-band-conformance-rc1/MAINTAINED_CONTROL_SUMMARY.json
+          tar -czf contract-c-minimal-in-band-conformance-rc1-${GITHUB_RUN_ID}.tar.gz -C build contract-c-minimal-in-band-conformance-rc1
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-minimal-in-band-conformance-rc1-${{ github.run_id }}
+          path: contract-c-minimal-in-band-conformance-rc1-${{ github.run_id }}.tar.gz
+          if-no-files-found: error
