@@ -1,0 +1,127 @@
+name: Contract C Consumer B Frozen Comparison Launch
+
+on:
+  push:
+    branches:
+      - research/contract-c-minimal-in-band-consumer-b-launch-20260912
+
+permissions:
+  contents: read
+
+env:
+  APERTURE_SHA: cb1d27ff00ae030093c5e97d78477cec7f20c6f4
+  APERTURE_TREE: 2fade6a19f1e199fd5d3412480badc3eac141eb2
+  CANDIDATE_SHA: 07e60447fae17369be5676f013c187b9fd0bfd98
+  IMPLEMENTATION_FREEZE_SHA: c1c31885f5802d4ea710dea7bcec214e977b9f03
+  EVALUATOR_SHA: 97cb968ac8793adb575640404730399a8798ad98
+  EVALUATOR_BLOB: cc1c507d81f5614ea76f1597d79099d51cd73e69
+
+jobs:
+  compare-frozen-consumer:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact frozen supervisor evaluator
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.EVALUATOR_SHA }}
+          path: evaluator
+          fetch-depth: 0
+
+      - name: Checkout exact frozen Consumer B candidate
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: candidate-run
+          fetch-depth: 0
+
+      - name: Verify frozen identities and write boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C evaluator rev-parse HEAD)" = "$EVALUATOR_SHA"
+          test "$(git -C evaluator rev-parse "$EVALUATOR_SHA:research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/evaluate_candidate.py")" = "$EVALUATOR_BLOB"
+          test "$(git -C candidate-run rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git -C candidate-run merge-base --is-ancestor "$APERTURE_SHA" "$IMPLEMENTATION_FREEZE_SHA"
+          git -C candidate-run merge-base --is-ancestor "$IMPLEMENTATION_FREEZE_SHA" "$CANDIDATE_SHA"
+          test "$(git -C candidate-run rev-parse "$APERTURE_SHA^{tree}")" = "$APERTURE_TREE"
+          changed="$(git -C candidate-run diff --name-only "$APERTURE_SHA"..."$CANDIDATE_SHA")"
+          printf '%s\n' "$changed"
+          test -n "$changed"
+          if printf '%s\n' "$changed" | grep -Ev '^candidate/(consumer\.py|test_consumer\.py|FREEZE_RECEIPT\.json)$' | grep -q .; then
+            echo 'candidate mutation escaped frozen write aperture' >&2
+            exit 1
+          fi
+
+      - name: Verify clean pre-freeze receipt and blobs
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          receipt = json.loads(Path('candidate-run/candidate/FREEZE_RECEIPT.json').read_text())
+          assert receipt['aperture_start_commit'] == 'cb1d27ff00ae030093c5e97d78477cec7f20c6f4'
+          assert receipt['frozen_candidate_commit'] == 'c1c31885f5802d4ea710dea7bcec214e977b9f03'
+          assert receipt['consumer_blob'] == '7c4e15855dfba57bdc2a23e98960e0d79d272aa6'
+          assert receipt['test_blob'] == '9000b495fd5d15f16dc82e662abe6764dc2b02f1'
+          assert receipt['terminal_pre_reveal_state'] == 'FROZEN_CANDIDATE_READY_FOR_REVEAL'
+          assert receipt['contamination_state'] == 'CLEAN_PRE_FREEZE_APERTURE'
+          assert receipt['forbidden_inputs_read'] == []
+          assert receipt['network_state'] in {'OFF', 'off', 'disabled', False}
+          assert receipt['post_freeze_evaluator_seen'] in {False, 'false', 'NO', 'no'}
+          print(json.dumps({
+              'terminal_pre_reveal_state': receipt['terminal_pre_reveal_state'],
+              'contamination_state': receipt['contamination_state'],
+              'allowed_inputs_read_count': len(receipt['allowed_inputs_read']),
+              'model_identity': receipt.get('model_identity'),
+          }, sort_keys=True))
+          PY
+          test "$(git -C candidate-run rev-parse "$IMPLEMENTATION_FREEZE_SHA:candidate/consumer.py")" = "7c4e15855dfba57bdc2a23e98960e0d79d272aa6"
+          test "$(git -C candidate-run rev-parse "$IMPLEMENTATION_FREEZE_SHA:candidate/test_consumer.py")" = "9000b495fd5d15f16dc82e662abe6764dc2b02f1"
+          test "$(git -C candidate-run rev-parse "$CANDIDATE_SHA:candidate/FREEZE_RECEIPT.json")" = "a2f75dff9ef4f1820a91331ee43e5ceb13d3a76e"
+
+      - name: Compile frozen candidate and evaluator
+        shell: bash
+        run: |
+          python -m py_compile \
+            candidate-run/candidate/consumer.py \
+            candidate-run/candidate/test_consumer.py \
+            evaluator/research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/evaluate_candidate.py
+
+      - name: Re-run frozen candidate prereveal tests
+        shell: bash
+        working-directory: candidate-run
+        run: python candidate/test_consumer.py
+
+      - name: Execute exact frozen post-freeze comparison
+        shell: bash
+        run: |
+          mkdir -p build/contract-c-minimal-in-band-consumer-b-comparison
+          python evaluator/research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/evaluate_candidate.py \
+            candidate-run \
+            build/contract-c-minimal-in-band-consumer-b-comparison/RESULT.json
+
+      - name: Package comparison evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/contract-c-minimal-in-band-consumer-b-comparison
+          cp evaluator/research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/PREREGISTRATION.md \
+            build/contract-c-minimal-in-band-consumer-b-comparison/EVALUATOR_PREREGISTRATION.md
+          cp candidate-run/candidate/FREEZE_RECEIPT.json \
+            build/contract-c-minimal-in-band-consumer-b-comparison/CANDIDATE_FREEZE_RECEIPT.json
+          git -C candidate-run rev-parse HEAD > build/contract-c-minimal-in-band-consumer-b-comparison/CANDIDATE_SHA.txt
+          git -C evaluator rev-parse HEAD > build/contract-c-minimal-in-band-consumer-b-comparison/EVALUATOR_SHA.txt
+          tar -czf contract-c-minimal-in-band-consumer-b-comparison-${GITHUB_RUN_ID}.tar.gz \
+            -C build contract-c-minimal-in-band-consumer-b-comparison
+
+      - name: Upload comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-minimal-in-band-consumer-b-comparison-${{ github.run_id }}
+          path: contract-c-minimal-in-band-consumer-b-comparison-${{ github.run_id }}.tar.gz
+          if-no-files-found: error
