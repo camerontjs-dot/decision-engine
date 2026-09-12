@@ -1,0 +1,55 @@
+{
+  "schema": "decision-current-main-minimal-in-band-conformance-rc1-expectations-v1",
+  "frozen_before_consumer_implementation": true,
+  "expected_profile": {
+    "contract_c_version": "research-non-deciding-rc0",
+    "policy_profile": "contract-c-non-deciding-shadow-rc0",
+    "whole_object_sha256": "sha256:325962ebcdbf6af836bb6193a451524ccd40b4d10f2394ff9f703fbfce1ec1e3",
+    "result_set_id": "result-set:4483272c4f6fbd9cb2362be7e3174bbd00aff3cf761d6c374897f3478818c9f0",
+    "proposition_id": "temporal-p1",
+    "reported_verdict": "not_checkable",
+    "policy_equivalent_disposition": "hold"
+  },
+  "semantic_expectations": {
+    "causal_channels": ["non_deciding", "non_deciding"],
+    "causal_passages": ["u-a", "u-b"],
+    "residual_passages": [],
+    "causal_form": "independent_sufficient_alternatives",
+    "sidecar_specific_fields_required": false,
+    "same_members_joint_form_is_distinct": true,
+    "neutral_residual_is_not_causal": true,
+    "causal_and_residual_neutral_are_distinguishable": true,
+    "scalar_or_confidence_winner_required": false
+  },
+  "safety_expectations": {
+    "wrong_digest_rejected": true,
+    "wrong_external_profile_rejected": true,
+    "object_cannot_self_select_profile": true,
+    "wrong_contract_b_binding_rejected": true,
+    "wrong_evidence_reference_rejected": true,
+    "proposition_substitution_rejected": true,
+    "missing_causal_member_rejected": true,
+    "causal_residual_overlap_rejected": true,
+    "unclassified_neutral_rejected": true,
+    "invalid_causal_cardinality_rejected": true,
+    "stale_result_set_identity_rejected": true,
+    "neutral_to_support_detected_as_laundering": true,
+    "neutral_to_counterevidence_detected_as_laundering": true,
+    "dropping_neutral_evidence_rejected": true,
+    "unsafe_neutral_implies_clear_mutant_killed": true
+  },
+  "maintained_boundary_expectations": {
+    "released_ingress_blob_unchanged": "f57a8067dadc04afb459f1d0342b2b786ec775e6",
+    "released_policy_blob_unchanged": "2225f73eb6eefd83609f0ba19e4786d1267dd527",
+    "decision_materializer_blob_unchanged": "1562fb29da6679a0cf894e478cbdd4ae16e21a18",
+    "released_ingress_accepts_research_successor": false,
+    "released_supported_control_clears": true,
+    "ordinary_ci_passes": true
+  },
+  "allowed_terminal_states": [
+    "SUPPORTED_CURRENT_MAIN_MINIMAL_IN_BAND_CONFORMANCE",
+    "FALSIFIED_CURRENT_MAIN_MINIMAL_IN_BAND_CONFORMANCE",
+    "INCONCLUSIVE_CURRENT_MAIN_MINIMAL_IN_BAND_CONFORMANCE",
+    "BLOCKED_CONTEXT_FREE_REPRODUCTION_REQUIRED"
+  ]
+}
