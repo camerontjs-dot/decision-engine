@@ -191,10 +191,11 @@ function classifyParticipation(row, contributions) {
 }
 
 export function consumeMinimalInBand({ bytes, expectedProfile, contractBIndex }) {
+  const externalProfile = requireObject(expectedProfile, "expectedProfile");
   const raw = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
   const actualDigest = wholeObjectSha256(raw);
-  if (actualDigest !== expectedProfile?.whole_object_sha256) {
-    throw new ResearchContractCError("whole_object_mismatch", `expected ${expectedProfile?.whole_object_sha256}, got ${actualDigest}`);
+  if (actualDigest !== externalProfile.whole_object_sha256) {
+    throw new ResearchContractCError("whole_object_mismatch", `expected ${externalProfile.whole_object_sha256}, got ${actualDigest}`);
   }
 
   let value;
@@ -206,12 +207,12 @@ export function consumeMinimalInBand({ bytes, expectedProfile, contractBIndex })
   if (!raw.equals(canonicalBytes(value))) {
     throw new ResearchContractCError("noncanonical_transport", "research Contract C bytes are not canonical");
   }
-  requireExactProfile(value, expectedProfile);
+  requireExactProfile(value, externalProfile);
   requireContractBBinding(value, contractBIndex);
   if (!RESULT_SET.test(value.result_set_id) || value.result_set_id !== resultSetId(value)) {
     throw new ResearchContractCError("result_set_identity_mismatch", "stale result-set identity");
   }
-  if (expectedProfile.result_set_id && value.result_set_id !== expectedProfile.result_set_id) {
+  if (externalProfile.result_set_id && value.result_set_id !== externalProfile.result_set_id) {
     throw new ResearchContractCError("result_set_authority_mismatch", "result-set identity does not match external expectation");
   }
   if (value.execution?.state !== "completed") {
