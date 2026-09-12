@@ -1,0 +1,27 @@
+name: Contract C Consumer B Evaluator Selfcheck
+
+on:
+  push:
+    branches:
+      - research/contract-c-minimal-in-band-consumer-b-evaluator-20260912
+
+permissions:
+  contents: read
+
+jobs:
+  evaluator-selfcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile hidden evaluator
+        run: python -m py_compile research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/evaluate_candidate.py
+      - name: Verify frozen aperture identities are pinned
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'cb1d27ff00ae030093c5e97d78477cec7f20c6f4' research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/PREREGISTRATION.md
+          grep -q '14e88cbc691f7eba9366b4bf88611ef834637f27' research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/PREREGISTRATION.md
+          grep -q 'APERTURE_SHA: cb1d27ff00ae030093c5e97d78477cec7f20c6f4' .github/workflows/contract-c-minimal-in-band-consumer-b-comparison.yml
