@@ -1,0 +1,261 @@
+name: Research - Decision Engine v1.0.0 pressure test RC0
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/v1-pressure-test-rc0/**'
+      - '.github/workflows/decision-engine-v1-pressure-test-rc0.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  DECISION_ENGINE_RELEASE: 7be709b2141c767c5da89b8b94cf90233c4238fe
+  DECISION_ENGINE_TAG: v1.0.0
+  DECISION_ENGINE_TAG_OBJECT: 7835f2f53267843113212abfa0cac6e726242409
+  DECISION_ENGINE_RELEASE_ARCHIVE_SHA256: c440d5de2a3853db9f4ccc2ba37d273e29ce8d9e71e0d646fc0c20eee0cd5902
+  CONTRACT_C_RELEASE: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_C_TAG: contract-c-v1.0.0
+  CONTRACT_C_TAG_OBJECT: 6bd135a948e407212b2e77ec18ac5c402f93565e
+  CONTRACT_C_VALIDATOR_BLOB: 9c75ccfbf2223578a8d1a7bf0c39673b394fbea4
+  CONTRACT_D_RELEASE: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  CONTRACT_D_TAG: contract-d-v1.0.0
+  CONTRACT_D_TAG_OBJECT: 6eadd688b482f3c9fce2ce5e7a2841089d852096
+  CAL_RELEASE: 5533bbcf27a3ee3a7d901f7dfc44c241bc558e2c
+  CAL_TAG: v0.5.0
+  CAL_TAG_OBJECT: 193c07178a8d891231746fca97c8c1bef0e9dc3c
+  PRIOR_B_APERTURE_HEAD: 570104216ef104ea8d3ba00f9383402b9c2e3154
+  PRESSURE_OUTPUT_DIR: build/v1-pressure-rc0
+
+jobs:
+  pressure-test:
+    name: Released artifact multi-angle pressure test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout research harness
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify research-only branch scope and frozen release identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "refs/tags/$DECISION_ENGINE_TAG")" = "$DECISION_ENGINE_TAG_OBJECT"
+          test "$(git rev-parse "$DECISION_ENGINE_TAG^{}")" = "$DECISION_ENGINE_RELEASE"
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              research/v1-pressure-test-rc0/*|.github/workflows/decision-engine-v1-pressure-test-rc0.yml) ;;
+              *) echo "Unexpected non-research delta: $path"; bad=1 ;;
+            esac
+          done < <(git diff --name-only "$DECISION_ENGINE_RELEASE"...HEAD)
+          test "$bad" -eq 0
+
+      - name: Download exact published v1.0.0 source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release-download
+          gh release download "$DECISION_ENGINE_TAG" \
+            --repo camerontjs-dot/decision-engine \
+            --pattern 'decision-engine-v1.0.0-source.tar.gz' \
+            --dir build/release-download
+          observed="$(sha256sum build/release-download/decision-engine-v1.0.0-source.tar.gz | awk '{print $1}')"
+          test "$observed" = "$DECISION_ENGINE_RELEASE_ARCHIVE_SHA256"
+
+      - name: Independently reproduce published release archive from exact tag target
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/release-reproduction
+          git archive --format=tar --prefix='decision-engine-v1.0.0/' "$DECISION_ENGINE_RELEASE" > build/release-reproduction/source.tar
+          gzip -n -c build/release-reproduction/source.tar > build/release-reproduction/source.tar.gz
+          test "$(sha256sum build/release-reproduction/source.tar.gz | awk '{print $1}')" = "$DECISION_ENGINE_RELEASE_ARCHIVE_SHA256"
+          cmp build/release-download/decision-engine-v1.0.0-source.tar.gz build/release-reproduction/source.tar.gz
+          mkdir -p "$RUNNER_TEMP/decision-engine-v1-pressure-subject"
+          tar -xzf build/release-download/decision-engine-v1.0.0-source.tar.gz -C "$RUNNER_TEMP/decision-engine-v1-pressure-subject"
+          subject="$RUNNER_TEMP/decision-engine-v1-pressure-subject/decision-engine-v1.0.0"
+          test "$(python -c "import json; print(json.load(open('$subject/release/metadata.json'))['version'])")" = "1.0.0"
+          echo "DECISION_ENGINE_SUBJECT_DIR=$subject" >> "$GITHUB_ENV"
+
+      - name: Checkout exact Contract C release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_C_RELEASE }}
+          path: _contract_c
+          fetch-depth: 0
+
+      - name: Checkout exact Contract D release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: ${{ env.CONTRACT_D_RELEASE }}
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Checkout exact CAL v0.5.0 release
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.CAL_RELEASE }}
+          path: _cal
+          fetch-depth: 0
+
+      - name: Checkout preserved Contract-B aperture evidence
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: ${{ env.PRIOR_B_APERTURE_HEAD }}
+          path: _prior_b_aperture
+          fetch-depth: 0
+
+      - name: Verify frozen external authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c rev-parse HEAD)" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c rev-parse "refs/tags/$CONTRACT_C_TAG")" = "$CONTRACT_C_TAG_OBJECT"
+          test "$(git -C _contract_c rev-parse "$CONTRACT_C_TAG^{}")" = "$CONTRACT_C_RELEASE"
+          test "$(git -C _contract_c hash-object validators/contract_c.py)" = "$CONTRACT_C_VALIDATOR_BLOB"
+
+          test "$(git -C _contract_d rev-parse HEAD)" = "$CONTRACT_D_RELEASE"
+          test "$(git -C _contract_d rev-parse "refs/tags/$CONTRACT_D_TAG")" = "$CONTRACT_D_TAG_OBJECT"
+          test "$(git -C _contract_d rev-parse "$CONTRACT_D_TAG^{}")" = "$CONTRACT_D_RELEASE"
+
+          test "$(git -C _cal rev-parse HEAD)" = "$CAL_RELEASE"
+          test "$(git -C _cal rev-parse "refs/tags/$CAL_TAG")" = "$CAL_TAG_OBJECT"
+          test "$(git -C _cal rev-parse "$CAL_TAG^{}")" = "$CAL_RELEASE"
+          test "$(git -C _prior_b_aperture rev-parse HEAD)" = "$PRIOR_B_APERTURE_HEAD"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install exact released Python dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -e ./_cal -e './_contract_d[dev]'
+
+      - name: Re-run ordinary released-artifact baseline suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$DECISION_ENGINE_SUBJECT_DIR"
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node --test tests/decisionMaterializer.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - name: Generate fresh real CAL v0.5.0 Contract C control
+        env:
+          CAL_RELEASE_DIR: ${{ github.workspace }}/_cal
+        run: python research/v1-pressure-test-rc0/generate_real_cal_control.py
+
+      - name: Pressure both V1 policies across domains, bindings, replay and CLI parity
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          REAL_CAL_CONTRACT_C: ${{ github.workspace }}/build/v1-pressure-rc0/real-cal-v0.5.0-contract-c.json
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/pressure.mjs
+
+      - name: Generate independent FAILED Decision controls
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/generate_failed_controls.mjs
+
+      - name: Pressure exact Contract D downstream applicability firewall
+        env:
+          PYTHONPATH: ${{ github.workspace }}/_contract_d
+        run: python research/v1-pressure-test-rc0/downstream_contract_d.py
+
+      - name: Replay known Contract-B internal-reference aperture on published artifact
+        env:
+          APPARATUS_CONTRACT_C_DIR: ${{ github.workspace }}/_contract_c
+          APPARATUS_CONTRACT_D_DIR: ${{ github.workspace }}/_contract_d
+          PRIOR_B_APERTURE_DIR: ${{ github.workspace }}/_prior_b_aperture
+          PYTHON: python
+        run: node research/v1-pressure-test-rc0/known_b_aperture_release_replay.mjs
+
+      - name: Synthesize bounded RC0 disposition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('build/v1-pressure-rc0')
+          pressure = json.loads((root / 'pressure-receipt.json').read_text())
+          downstream = json.loads((root / 'downstream-contract-d-receipt.json').read_text())
+          aperture = json.loads((root / 'known-contract-b-aperture-release-replay.json').read_text())
+          gaps = json.loads((root / 'capability-gap-map.json').read_text())
+          assert pressure['status'] == 'PASS'
+          assert downstream['status'] == 'PASS'
+          assert aperture['status'] == 'PASS'
+          assert aperture['classification'] == 'KNOWN_AUTHORITY_APERTURE_REPRODUCED_ON_RELEASE_ARTIFACT'
+          assert len(gaps) == pressure['capability_gap_count']
+
+          summary = {
+              'status': 'PASS_WITH_KNOWN_BOUNDS',
+              'subject': 'Decision Engine v1.0.0 published release artifact',
+              'released_runtime_defect_observed': False,
+              'new_authority_or_binding_defect_observed': False,
+              'known_contract_b_internal_reference_aperture_reproduced': True,
+              'maintained_policy_count': pressure['maintained_policy_count'],
+              'domain_case_count': pressure['domain_case_count'],
+              'domain_families': pressure['domain_families'],
+              'real_cal_v0_5_0_control': True,
+              'generated_decision_count': pressure['generated_decision_count'] + downstream['failed_control_count'],
+              'contract_d_outcomes': downstream['outcomes'],
+              'capability_gap_count': len(gaps),
+              'capability_gap_ids': [row['id'] for row in gaps],
+              'interpretation': (
+                  'The released v1.0.0 artifact conformed across the tested maintained policy, domain-shaped, '
+                  'replay, determinism, CLI/library, and downstream applicability surfaces. The previously '
+                  'documented Contract-B internal-reference trust aperture remains reproducible and is not '
+                  'reclassified as a new defect. Broader approval/remediation/task/document decisions remain '
+                  'explicit capability gaps rather than being approximated through the two V1 policies.'
+              ),
+              'authorization_performed': False,
+              'execution_performed': False,
+              'maintained_runtime_modified': False,
+          }
+          (root / 'campaign-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - name: Verify published subject and research checkout remained immutable
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum build/release-download/decision-engine-v1.0.0-source.tar.gz | awk '{print $1}')" = "$DECISION_ENGINE_RELEASE_ARCHIVE_SHA256"
+          git diff --exit-code
+          git status --porcelain --untracked-files=no | test ! -s /dev/stdin
+
+      - name: Upload RC0 pressure evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: decision-engine-v1.0.0-pressure-rc0-${{ github.sha }}
+          path: |
+            build/v1-pressure-rc0/
+            build/release-download/decision-engine-v1.0.0-source.tar.gz
+          if-no-files-found: error
+          retention-days: 90
