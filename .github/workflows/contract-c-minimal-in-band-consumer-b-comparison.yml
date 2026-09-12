@@ -1,0 +1,131 @@
+name: Contract C Consumer B Context-Free Comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact frozen research-scaffold-harness candidate commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  APERTURE_SHA: cb1d27ff00ae030093c5e97d78477cec7f20c6f4
+  APERTURE_TREE: 2fade6a19f1e199fd5d3412480badc3eac141eb2
+  RSH_REPO: camerontjs-dot/research-scaffold-harness
+
+jobs:
+  compare-frozen-consumer:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout frozen supervisor evaluator
+        uses: actions/checkout@v4
+        with:
+          path: evaluator
+          fetch-depth: 0
+
+      - name: Validate candidate SHA input
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate='${{ inputs.candidate_sha }}'
+          [[ "$candidate" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Checkout exact frozen Consumer B candidate
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: ${{ inputs.candidate_sha }}
+          path: candidate-run
+          fetch-depth: 0
+
+      - name: Verify aperture ancestry and mutation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate='${{ inputs.candidate_sha }}'
+          test "$(git -C candidate-run rev-parse HEAD)" = "$candidate"
+          git -C candidate-run merge-base --is-ancestor "$APERTURE_SHA" "$candidate"
+          test "$(git -C candidate-run show "$APERTURE_SHA^{tree}" --format='%T' -s)" = "$APERTURE_TREE"
+          changed="$(git -C candidate-run diff --name-only "$APERTURE_SHA"..."$candidate")"
+          printf '%s\n' "$changed"
+          test -n "$changed"
+          if printf '%s\n' "$changed" | grep -Ev '^candidate/(consumer\.py|test_consumer\.py|FREEZE_RECEIPT\.json)$' | grep -q .; then
+            echo 'candidate mutation escaped frozen write aperture' >&2
+            exit 1
+          fi
+          for path in \
+            research/contract_c_minimal_in_band_consumer_b_aperture/MANIFEST.json \
+            research/contract_c_minimal_in_band_consumer_b_aperture/PRE_FREEZE_TASK.md \
+            research/contract_c_minimal_in_band_consumer_b_aperture/SPEC.md \
+            research/contract_c_minimal_in_band_consumer_b_aperture/SHADOW_SPEC.md \
+            research/contract_c_minimal_in_band_consumer_b_aperture/schema-delta.json \
+            research/contract_c_minimal_in_band_consumer_b_aperture/contract-b-index.json \
+            research/contract_c_minimal_in_band_consumer_b_aperture/valid-shadow.json; do
+            test "$(git -C candidate-run rev-parse "$APERTURE_SHA:$path")" = "$(git -C candidate-run rev-parse "$candidate:$path")"
+          done
+
+      - name: Verify clean pre-freeze receipt
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          receipt = json.loads(Path('candidate-run/candidate/FREEZE_RECEIPT.json').read_text())
+          assert receipt.get('aperture_start_commit') == 'cb1d27ff00ae030093c5e97d78477cec7f20c6f4'
+          assert receipt.get('terminal_pre_reveal_state') == 'FROZEN_CANDIDATE_READY_FOR_REVEAL'
+          assert receipt.get('contamination_state') == 'CLEAN_PRE_FREEZE_APERTURE'
+          assert receipt.get('forbidden_inputs_read') == []
+          assert receipt.get('network_state') in {'OFF', 'off', 'disabled', False}
+          assert receipt.get('post_freeze_evaluator_seen') in {False, 'false', 'NO', 'no'}
+          assert isinstance(receipt.get('allowed_inputs_read'), list)
+          print(json.dumps({
+              'terminal_pre_reveal_state': receipt['terminal_pre_reveal_state'],
+              'contamination_state': receipt['contamination_state'],
+              'allowed_inputs_read_count': len(receipt['allowed_inputs_read']),
+          }, sort_keys=True))
+          PY
+
+      - name: Compile frozen candidate and hidden evaluator
+        shell: bash
+        run: |
+          python -m py_compile candidate-run/candidate/consumer.py candidate-run/candidate/test_consumer.py evaluator/research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/evaluate_candidate.py
+
+      - name: Run candidate prereveal tests as frozen
+        shell: bash
+        working-directory: candidate-run
+        run: python candidate/test_consumer.py
+
+      - name: Execute hidden post-freeze comparison
+        shell: bash
+        run: |
+          mkdir -p build/contract-c-minimal-in-band-consumer-b-comparison
+          python evaluator/research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/evaluate_candidate.py \
+            candidate-run \
+            build/contract-c-minimal-in-band-consumer-b-comparison/RESULT.json
+
+      - name: Package comparison evidence
+        shell: bash
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p build/contract-c-minimal-in-band-consumer-b-comparison
+          cp evaluator/research/contract-c-minimal-in-band-consumer-b-hidden-evaluator/PREREGISTRATION.md \
+            build/contract-c-minimal-in-band-consumer-b-comparison/EVALUATOR_PREREGISTRATION.md
+          cp candidate-run/candidate/FREEZE_RECEIPT.json \
+            build/contract-c-minimal-in-band-consumer-b-comparison/CANDIDATE_FREEZE_RECEIPT.json
+          git -C candidate-run rev-parse HEAD > build/contract-c-minimal-in-band-consumer-b-comparison/CANDIDATE_SHA.txt
+          git -C evaluator rev-parse HEAD > build/contract-c-minimal-in-band-consumer-b-comparison/EVALUATOR_SHA.txt
+          tar -czf contract-c-minimal-in-band-consumer-b-comparison-${GITHUB_RUN_ID}.tar.gz \
+            -C build contract-c-minimal-in-band-consumer-b-comparison
+
+      - name: Upload comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-minimal-in-band-consumer-b-comparison-${{ github.run_id }}
+          path: contract-c-minimal-in-band-consumer-b-comparison-${{ github.run_id }}.tar.gz
+          if-no-files-found: error
