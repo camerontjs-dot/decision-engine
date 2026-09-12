@@ -48,7 +48,7 @@ jobs:
           candidate='${{ inputs.candidate_sha }}'
           test "$(git -C candidate-run rev-parse HEAD)" = "$candidate"
           git -C candidate-run merge-base --is-ancestor "$APERTURE_SHA" "$candidate"
-          test "$(git -C candidate-run show "$APERTURE_SHA^{tree}" --format='%T' -s)" = "$APERTURE_TREE"
+          test "$(git -C candidate-run rev-parse "$APERTURE_SHA^{tree}")" = "$APERTURE_TREE"
           changed="$(git -C candidate-run diff --name-only "$APERTURE_SHA"..."$candidate")"
           printf '%s\n' "$changed"
           test -n "$changed"
