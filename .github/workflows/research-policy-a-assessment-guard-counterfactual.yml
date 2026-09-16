@@ -1,0 +1,89 @@
+name: Research - Policy A assessment guard counterfactual
+
+on:
+  push:
+    branches:
+      - research/policy-a-assessment-guard-counterfactual-20260907
+  pull_request:
+    paths:
+      - "research/policy-a-assessment-guard-counterfactual/**"
+      - ".github/workflows/research-policy-a-assessment-guard-counterfactual.yml"
+      - "src/contractC*.js"
+      - "src/contractD*.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CONTRACT_C_HEAD: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+  CONTRACT_D_HEAD: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+  DECISION_BASE: a4425f8eb47449ff6c683222921bbea9483742e2
+  DECISION_RESEARCH_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  policy-counterfactual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact research head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$DECISION_RESEARCH_HEAD"
+
+      - name: Checkout exact Contract C and D authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-c
+          git -C _deps/apparatus-c checkout "$CONTRACT_C_HEAD"
+          git clone --no-checkout https://github.com/camerontjs-dot/apparatus-contracts.git _deps/apparatus-d
+          git -C _deps/apparatus-d checkout "$CONTRACT_D_HEAD"
+          test "$(git -C _deps/apparatus-c rev-parse HEAD)" = "$CONTRACT_C_HEAD"
+          test "$(git -C _deps/apparatus-d rev-parse HEAD)" = "$CONTRACT_D_HEAD"
+
+      - name: Install released validator dependencies
+        shell: bash
+        run: python3 -m pip install "pydantic>=2.6,<3" "rfc8785==0.1.4"
+
+      - name: Run Policy A assessment counterfactual
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/policy-a-assessment-counterfactual
+          node research/policy-a-assessment-guard-counterfactual/run.mjs \
+            --contract-c-authority _deps/apparatus-c \
+            --contract-d-authority _deps/apparatus-d \
+            --fixture research/policy-a-assessment-guard-counterfactual/real-cal-supported-child-1.contract-c.json \
+            | tee build/policy-a-assessment-counterfactual/RESULT.json
+
+      - name: Assert no maintained Decision source mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --name-only "$DECISION_BASE"...HEAD -- src/ scripts/ | grep -q .; then
+            echo "research branch modified maintained Decision source" >&2
+            exit 1
+          fi
+
+      - name: Upload receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-a-assessment-counterfactual-${{ github.run_id }}
+          path: build/policy-a-assessment-counterfactual
+          if-no-files-found: warn
+          retention-days: 90
