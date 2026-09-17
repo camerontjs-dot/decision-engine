@@ -101,7 +101,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/c2-authority-artifact-reconstruction-rc1
-          node research/c2-authority-artifact-reconstruction-rc1/run.mjs \
+          node research/c2-authority-artifact-reconstruction-rc1/run-successor.mjs \
             2>&1 | tee build/c2-authority-artifact-reconstruction-rc1/console.log
 
       - name: Upload research result
