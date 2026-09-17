@@ -1,0 +1,113 @@
+name: Research C2 artifact-authority reconstruction RC1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/c2-authority-artifact-reconstruction-rc1-20260917
+  pull_request:
+    branches:
+      - research/c2-authority-boundary-hardening-rc0-20260917
+    paths:
+      - 'research/c2-authority-artifact-reconstruction-rc1/**'
+      - '.github/workflows/research-c2-authority-artifact-reconstruction-rc1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  artifact-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Decision Engine research head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install research-only YAML parser
+        run: python -m pip install 'PyYAML>=6,<7'
+
+      - name: Verify stacked Decision subject and research-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          RC0=153cd69c5a08ed0b86d0507ccc828acdad174afe
+          C2_SUBJECT=b1bcc33e2b5ef0707b8cbf7dd8e821b2d34d1b55
+          git cat-file -e "${RC0}^{commit}"
+          git cat-file -e "${C2_SUBJECT}^{commit}"
+          git merge-base --is-ancestor "$RC0" HEAD
+          if ! git diff --quiet "$C2_SUBJECT"..HEAD -- src scripts tests; then
+            echo "Research branch changed maintained Decision source/scripts/tests" >&2
+            git diff --name-status "$C2_SUBJECT"..HEAD -- src scripts tests >&2
+            exit 1
+          fi
+          echo "Stacked subject and maintained-byte scope verified"
+
+      - name: Checkout exact Contract C2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: _apparatus_c2
+          fetch-depth: 1
+
+      - name: Checkout independent Contract-B artifact source
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: d03d0e960ad82d889e6763fd4fb53cd24babd187
+          path: _cal_authority
+          fetch-depth: 1
+
+      - name: Checkout independent producer resolver authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 1d33e0612befcf8016816197c90c062373796df9
+          path: _resolver_authority
+          fetch-depth: 1
+
+      - name: Verify exact external Git identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _apparatus_c2 rev-parse HEAD)" = "b42c827acb0a9fe65353354d709add0e27bab307"
+          test "$(git -C _cal_authority rev-parse HEAD)" = "d03d0e960ad82d889e6763fd4fb53cd24babd187"
+          test "$(git -C _resolver_authority rev-parse HEAD)" = "1d33e0612befcf8016816197c90c062373796df9"
+          test "$(git -C _apparatus_c2 hash-object validators/contract_c_v2.py)" = "bb5a381f89828ddc92adfdedcc4e9d98069f436d"
+          test "$(git -C _apparatus_c2 hash-object validators/contract_c_rc2.py)" = "1d2ecd228cde807138013c33c8675c3003421d3c"
+          test "$(git -C _resolver_authority hash-object research/contract_c2_current_cal_resolver_successor_rc0/RESOLVER.json)" = "1a408246fd3bef0758a958ae716b44ea74bc0689"
+          echo "External authority commits and critical blobs verified"
+
+      - name: Execute preregistered artifact-authority discriminator
+        shell: bash
+        env:
+          APPARATUS_CONTRACT_C2_DIR: ${{ github.workspace }}/_apparatus_c2
+          CAL_CONTRACT_B_AUTHORITY_DIR: ${{ github.workspace }}/_cal_authority
+          APPARATUS_RESOLVER_AUTHORITY_DIR: ${{ github.workspace }}/_resolver_authority
+          PYTHON: python3
+          DECISION_C2_ARTIFACT_AUTHORITY_OUTPUT_DIR: build/c2-authority-artifact-reconstruction-rc1
+        run: |
+          set -o pipefail
+          mkdir -p build/c2-authority-artifact-reconstruction-rc1
+          node research/c2-authority-artifact-reconstruction-rc1/run.mjs \
+            2>&1 | tee build/c2-authority-artifact-reconstruction-rc1/console.log
+
+      - name: Upload research result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2-authority-artifact-reconstruction-rc1-${{ github.sha }}
+          path: build/c2-authority-artifact-reconstruction-rc1/
+          if-no-files-found: warn
