@@ -149,7 +149,7 @@ jobs:
             --out "$PWD/build/authority-adapter-seam-rc2/legacy" \
             2>&1 | tee build/authority-adapter-seam-rc2/legacy/console.log
           test "$(jq -r .status build/authority-adapter-seam-rc2/legacy/RESULT.json)" = "PASS"
-          test "$(jq -r .exact_projection_kernel_sha256 build/authority-adapter-seam-rc2/legacy/RESULT.json)" = "$PROJECTION_KERNEL_SHA256"
+          test "$(jq -r .exact_projection_kernel_sha256 build/authority-adapter-seam-rc2/legacy/RESULT.json)" = "sha256:$PROJECTION_KERNEL_SHA256"
 
       - name: Execute CAL shadow, signed authority, and cross-adapter audit
         shell: bash
@@ -165,7 +165,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/authority-adapter-seam-rc2/current
-          node research/authority-adapter-seam-rc2/run.mjs 2>&1 | tee build/authority-adapter-seam-rc2/current/console.log
+          node research/authority-adapter-seam-rc2/run-successor.mjs 2>&1 | tee build/authority-adapter-seam-rc2/current/console.log
           test "$(jq -r .disposition build/authority-adapter-seam-rc2/current/RESULT.json)" = "SUPPORTED_TRUSTED_AUTHORITY_ADAPTER_SEAM"
 
       - name: Recheck research-only scope
