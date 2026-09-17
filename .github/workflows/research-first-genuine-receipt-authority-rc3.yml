@@ -1,0 +1,96 @@
+name: Research first-genuine receipt authority RC3
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/first-genuine-receipt-authority-rc3-20260917
+
+permissions:
+  contents: read
+
+jobs:
+  receipt-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RC2_PARENT: 97f654a8dd70acf522007ae94a1e23f881a0e7cd
+      PREREG_COMMIT: c4eb8d7fd59874c405af74855c87c78e48d39923
+      RECEIPT_COMMIT: 93c4f162c0f22a5c2e599fd332160628bc8b2986
+      B_CONTROL_COMMIT: d03d0e960ad82d889e6763fd4fb53cd24babd187
+    steps:
+      - name: Checkout RC3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen lineage and research-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git merge-base "$RC2_PARENT" HEAD)" = "$RC2_PARENT"
+          git merge-base --is-ancestor "$PREREG_COMMIT" HEAD
+          if ! git diff --quiet "$RC2_PARENT"..HEAD -- src scripts tests; then
+            echo "RC3 changed maintained Decision source/scripts/tests" >&2
+            git diff --name-status "$RC2_PARENT"..HEAD -- src scripts tests >&2
+            exit 1
+          fi
+
+      - name: Checkout exact first-genuine receipt authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.RECEIPT_COMMIT }}
+          path: _receipt_authority
+          fetch-depth: 1
+
+      - name: Checkout exact Contract-B mechanism control
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.B_CONTROL_COMMIT }}
+          path: _b_control
+          fetch-depth: 1
+
+      - name: Install harness dependency
+        run: python -m pip install --disable-pip-version-check 'PyYAML>=6,<7'
+
+      - name: Execute preregistered discriminator
+        env:
+          RECEIPT_AUTHORITY_ROOT: ${{ github.workspace }}/_receipt_authority
+          B_CONTROL_ROOT: ${{ github.workspace }}/_b_control
+          RC3_OUTPUT_DIR: build/first-genuine-receipt-authority-rc3
+        run: |
+          set -o pipefail
+          mkdir -p build/first-genuine-receipt-authority-rc3
+          python research/first-genuine-receipt-authority-rc3/run.py 2>&1 | tee build/first-genuine-receipt-authority-rc3/console.log
+          test "$(python -c 'import json; print(json.load(open("build/first-genuine-receipt-authority-rc3/RESULT.json"))["disposition"])')" = "FALSIFIED_RECEIPT_ONLY_AUTHORITY_SUPPORTED_IMMUTABLE_LOCATOR_MECHANISM"
+
+      - name: Recheck maintained scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --quiet "$RC2_PARENT"..HEAD -- src scripts tests
+
+      - name: Package evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf first-genuine-receipt-authority-rc3-evidence.tgz build/first-genuine-receipt-authority-rc3 research/first-genuine-receipt-authority-rc3
+          sha256sum first-genuine-receipt-authority-rc3-evidence.tgz | tee build/first-genuine-receipt-authority-rc3/evidence-tgz.sha256
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-genuine-receipt-authority-rc3-${{ github.sha }}
+          path: |
+            build/first-genuine-receipt-authority-rc3/
+            first-genuine-receipt-authority-rc3-evidence.tgz
+          if-no-files-found: error
+          retention-days: 90
