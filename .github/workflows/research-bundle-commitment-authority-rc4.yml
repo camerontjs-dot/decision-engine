@@ -1,0 +1,98 @@
+name: Research bundle commitment authority RC4
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/bundle-commitment-authority-rc4-20260917
+
+permissions:
+  contents: read
+
+jobs:
+  bundle-commitment-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RC3_PARENT: e7ab81f46ffecfe0e796d8ea94593eedaced89fb
+      PREREG_COMMIT: 5ff25085ba8f57cc75ceaaebe1f125b7046ec74c
+      EB_COMMIT: 4e1f6fe00e7c350b28f52bfea14f1f8988847884
+      B_CONTROL_COMMIT: d03d0e960ad82d889e6763fd4fb53cd24babd187
+      PRESERVED_RUN_BLOB: 40eb85ab1ff4232249b708593706fef3df4e49a2
+    steps:
+      - name: Checkout RC4
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify preregistration lineage and research-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git merge-base "$RC3_PARENT" HEAD)" = "$RC3_PARENT"
+          git merge-base --is-ancestor "$PREREG_COMMIT" HEAD
+          test "$(git rev-parse HEAD:research/bundle-commitment-authority-rc4/run.py)" = "$PRESERVED_RUN_BLOB"
+          if ! git diff --quiet "$RC3_PARENT"..HEAD -- src scripts tests; then
+            echo "RC4 changed maintained Decision source/scripts/tests" >&2
+            git diff --name-status "$RC3_PARENT"..HEAD -- src scripts tests >&2
+            exit 1
+          fi
+
+      - name: Checkout exact Evidence Bundler hashing authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: ${{ env.EB_COMMIT }}
+          path: _eb
+          fetch-depth: 1
+
+      - name: Checkout exact Contract-B mechanism control
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: ${{ env.B_CONTROL_COMMIT }}
+          path: _b_control
+          fetch-depth: 1
+
+      - name: Install exact EB package
+        run: python -m pip install --disable-pip-version-check -e ./_eb
+
+      - name: Execute commitment discriminator via preserved-harness successor
+        env:
+          EB_AUTHORITY_ROOT: ${{ github.workspace }}/_eb
+          B_CONTROL_ROOT: ${{ github.workspace }}/_b_control
+          RC4_OUTPUT_DIR: build/bundle-commitment-authority-rc4
+        run: |
+          set -o pipefail
+          mkdir -p build/bundle-commitment-authority-rc4
+          python research/bundle-commitment-authority-rc4/run-successor.py 2>&1 | tee build/bundle-commitment-authority-rc4/console.log
+          test "$(python -c 'import json; print(json.load(open("build/bundle-commitment-authority-rc4/RESULT.json"))["disposition"])')" = "SUPPORTED_TRUSTED_BUNDLE_COMMITMENT_PLUS_PRESENTED_ARTIFACT"
+
+      - name: Recheck maintained scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --quiet "$RC3_PARENT"..HEAD -- src scripts tests
+
+      - name: Package evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf bundle-commitment-authority-rc4-evidence.tgz build/bundle-commitment-authority-rc4 research/bundle-commitment-authority-rc4
+          sha256sum bundle-commitment-authority-rc4-evidence.tgz | tee build/bundle-commitment-authority-rc4/evidence-tgz.sha256
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-commitment-authority-rc4-${{ github.sha }}
+          path: |
+            build/bundle-commitment-authority-rc4/
+            bundle-commitment-authority-rc4-evidence.tgz
+          if-no-files-found: error
+          retention-days: 90
