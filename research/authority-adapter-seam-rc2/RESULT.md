@@ -155,15 +155,19 @@ The strongest remaining assumptions are:
 
 ## Preserved apparatus failure
 
-Run `35232390053`'s predecessor execution `35232390053`? No. The preserved predecessor is run `35232390053`'s earlier branch execution `35232390053` is the decisive successor and should not be conflated with it.
+The first hosted RC2 execution is preserved as an apparatus failure rather than overwritten:
 
-The actual preserved first hosted failure was:
+- run: `35232390053`
+- job: `105239555259`
+- executed head: `6b8e858506951924c24218f7f9d01f9e5f8f33a3`
+- classification: `APPARATUS_LEGACY_DIGEST_PREFIX_ASSERTION_DEFECT`
+- artifact ID: `10501677508`
+- artifact ZIP SHA-256: `450a91e49b5233206c6cf974d11bd023d96228bdee442b6c8ace12481add589f`
+- packaged evidence TGZ SHA-256: `c994b63d26b54e0f4984d483eaa4f316e585f16faf6fcf8904f86af1a2b9860b`
 
-- run `35232390053` predecessor family: see `PRESERVED_FAILURES.md` for exact run `35232390053` predecessor record and artifact evidence.
+The frozen artifact-manifest scientific runner itself printed PASS in that execution. The wrapper then compared a `sha256:<hex>` result with a bare `<hex>` expectation and failed before the new Phase C/D harness ran. The original harness remains preserved unchanged; the decisive successor applied only that mechanical digest-representation normalization via a wrapper and workflow assertion correction.
 
-**Correction:** because the decisive run itself is `35232698263`, the exact preserved first failure is run `35232390053`, job `105239555259`, executed head `6b8e858506951924c24218f7f9d01f9e5f8f33a3`.
-
-It is classified `APPARATUS_LEGACY_DIGEST_PREFIX_ASSERTION_DEFECT`: the frozen manifest science printed PASS, then a wrapper compared prefixed versus bare SHA-256 representations and failed. The original harness remains preserved; the successor applied only that mechanical representation correction.
+Intermediate push-triggered executions before the workflow correction inherited the same known wrapper defect and add no new scientific observation.
 
 ## Promotion boundary
 
