@@ -1,0 +1,11 @@
+{
+  "profile": "causal-assertion-downstream-jurisdiction-rc0",
+  "cases": {
+    "Q-ordinary-supported": {
+      "jurisdiction": "ordinary_categorical_support"
+    },
+    "Q-causal-assertion-supported": {
+      "jurisdiction": "explicit_source_assertion_only"
+    }
+  }
+}

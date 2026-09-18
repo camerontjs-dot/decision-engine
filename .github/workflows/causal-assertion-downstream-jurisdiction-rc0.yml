@@ -1,0 +1,57 @@
+name: Research - causal assertion downstream jurisdiction RC0
+
+on:
+  push:
+    branches:
+      - research/causal-assertion-downstream-jurisdiction-rc0-20260918
+  pull_request:
+    paths:
+      - "research/causal_assertion_downstream_jurisdiction_rc0/**"
+      - ".github/workflows/causal-assertion-downstream-jurisdiction-rc0.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  discriminate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Checkout exact Contract C2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: apparatus-c2
+
+      - name: Verify maintained Decision source unchanged
+        run: git diff --exit-code b1bcc33e2b5ef0707b8cbf7dd8e821b2d34d1b55 -- src/
+
+      - name: Verify exact C2 authority
+        run: test "$(git -C apparatus-c2 rev-parse HEAD)" = "b42c827acb0a9fe65353354d709add0e27bab307"
+
+      - name: Syntax check
+        run: node --check research/causal_assertion_downstream_jurisdiction_rc0/evaluate.mjs
+
+      - name: Run discriminator
+        env:
+          APPARATUS_CONTRACT_C2_DIR: ${{ github.workspace }}/apparatus-c2
+          CAUSAL_JURISDICTION_OUTPUT: ${{ github.workspace }}/build/causal-jurisdiction-rc0.json
+        run: |
+          mkdir -p build
+          node research/causal_assertion_downstream_jurisdiction_rc0/evaluate.mjs
+
+      - name: Upload receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-assertion-downstream-jurisdiction-rc0
+          path: build/causal-jurisdiction-rc0.json
