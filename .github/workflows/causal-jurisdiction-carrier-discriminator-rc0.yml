@@ -1,0 +1,45 @@
+name: Research - causal jurisdiction carrier discriminator RC0
+
+on:
+  push:
+    branches:
+      - research/causal-jurisdiction-carrier-discriminator-rc0-20260918
+  pull_request:
+    paths:
+      - "research/causal_jurisdiction_carrier_discriminator_rc0/**"
+      - ".github/workflows/causal-jurisdiction-carrier-discriminator-rc0.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  discriminate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkout exact Contract C2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: apparatus-c2
+      - name: Verify maintained Decision source unchanged
+        run: git diff --exit-code b1bcc33e2b5ef0707b8cbf7dd8e821b2d34d1b55 -- src/
+      - name: Verify exact C2 authority
+        run: test "$(git -C apparatus-c2 rev-parse HEAD)" = "b42c827acb0a9fe65353354d709add0e27bab307"
+      - name: Syntax check frozen apparatus
+        run: |
+          node --check research/causal_jurisdiction_carrier_discriminator_rc0/apparatus.mjs
+          node --check research/causal_jurisdiction_carrier_discriminator_rc0/evaluator.mjs
+      - name: Run weak-strategy discriminator
+        run: node research/causal_jurisdiction_carrier_discriminator_rc0/apparatus.mjs
+      - name: Run candidate discriminator
+        env:
+          APPARATUS_CONTRACT_C2_DIR: ${{ github.workspace }}/apparatus-c2
+        run: node research/causal_jurisdiction_carrier_discriminator_rc0/evaluator.mjs
