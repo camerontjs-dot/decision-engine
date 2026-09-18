@@ -43,8 +43,8 @@ jobs:
 
       - name: Run discriminator
         env:
-          APPARATUS_CONTRACT_C2_DIR: $GITHUB_WORKSPACE/apparatus-c2
-          CAUSAL_JURISDICTION_OUTPUT: $GITHUB_WORKSPACE/build/causal-jurisdiction-rc0.json
+          APPARATUS_CONTRACT_C2_DIR: ${{ github.workspace }}/apparatus-c2
+          CAUSAL_JURISDICTION_OUTPUT: ${{ github.workspace }}/build/causal-jurisdiction-rc0.json
         run: |
           mkdir -p build
           node research/causal_assertion_downstream_jurisdiction_rc0/evaluate.mjs
