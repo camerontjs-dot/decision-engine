@@ -1,0 +1,78 @@
+{
+  "schema_version": "decision-engine-local-pipeline-slice/1",
+  "status": "QUALIFIED_FOR_LOCAL_PIPELINE_RUNS_C1_ONLY",
+  "component": "decision-engine",
+  "component_version": "1.0.0",
+  "candidate": {
+    "repository": "camerontjs-dot/decision-engine",
+    "release": "v1.0.0",
+    "commit": "7be709b2141c767c5da89b8b94cf90233c4238fe",
+    "tree": "4e92703e781024de62c77f2f14e9164aceb16815",
+    "annotated_tag_object": "7835f2f53267843113212abfa0cac6e726242409"
+  },
+  "portable_artifact": {
+    "name": "decision-engine-v1.0.0-source.tar.gz",
+    "sha256": "sha256:c440d5de2a3853db9f4ccc2ba37d273e29ce8d9e71e0d646fc0c20eee0cd5902",
+    "release_receipt_sha256": "sha256:ae2de0d5cf143c7118e54be387e8bd430b73e5cfa249ffc73183768a281a670a"
+  },
+  "qualification": {
+    "exact_release_run": 34646511527,
+    "exact_release_run_conclusion": "success",
+    "post_merge_ci_run": 34611230661,
+    "post_merge_ci_conclusion": "success",
+    "artifact_smoke_test": true,
+    "deterministic_archive_rebuild": true,
+    "exact_authority_cli_conformance": true,
+    "downstream_contract_d_consumption": true
+  },
+  "external_authorities": {
+    "contract_c": {
+      "version": "1.0.0",
+      "release_commit": "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+    },
+    "contract_d": {
+      "version": "1.0.0",
+      "release_commit": "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+    }
+  },
+  "maintained_invocation": {
+    "library": "evaluateContractCDecision(options)",
+    "cli": "scripts/decision-engine-evaluate.mjs",
+    "policy_identities": [
+      "decision-engine.contract-c.supported-claim-verification@1.0.0",
+      "decision-engine.contract-c.causal-basis-citation@1.0.0"
+    ],
+    "output": "canonical Contract D 1.0.0"
+  },
+  "decision_authority_freeze": {
+    "owns": [
+      "exact input authority kind/id/immutable identity",
+      "exact Decision policy id/version",
+      "exact target kind/id/content hash",
+      "evaluation state",
+      "completed disposition clear|hold",
+      "exact typed/versioned normalized effect and parameters",
+      "Contract D semantic identity"
+    ],
+    "non_authoritative": [
+      "Contract D metadata"
+    ]
+  },
+  "explicit_exclusions": [
+    "Contract C 2.x ingress or semantics",
+    "CAL V1 richer parent/decomposition state not representable by released Contract C 1.0.0",
+    "generic policy registry/plugin/DSL semantics",
+    "operational Authorization",
+    "actor selection or approval/delegation",
+    "execution or external mutation",
+    "research-only successor authority domains"
+  ],
+  "requalification_triggers": [
+    "incoming authority is not exact released Contract C 1.0.0",
+    "Decision policy semantics or policy identity changes",
+    "target/input-authority/effect binding changes",
+    "Contract D authority or emitted semantics change",
+    "richer CAL decomposition state is admitted downstream",
+    "Authorization or execution semantics are introduced"
+  ]
+}
