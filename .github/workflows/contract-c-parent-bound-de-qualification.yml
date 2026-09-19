@@ -1,0 +1,153 @@
+name: Parent-bound Contract C -> frozen Decision Engine qualification
+
+on:
+  push:
+    branches:
+      - research/contract-c-parent-bound-de-qualification-20260919
+  pull_request:
+    paths:
+      - "research/contract-c-parent-bound-de-qualification-20260919/**"
+      - ".github/workflows/contract-c-parent-bound-de-qualification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout frozen Decision descendant
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify maintained V1 source is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 7be709b2141c767c5da89b8b94cf90233c4238fe HEAD
+          if git diff --name-only 7be709b2141c767c5da89b8b94cf90233c4238fe..HEAD -- src scripts tests | grep -q .; then
+            echo "frozen maintained Decision bytes changed" >&2
+            exit 1
+          fi
+
+      - name: Checkout frozen Contract C candidate
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec
+          path: _contract_c_parent
+          fetch-depth: 1
+
+      - name: Checkout exact Candidate A RC2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: _c2
+          fetch-depth: 1
+
+      - name: Checkout exact resolver authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 1d33e0612befcf8016816197c90c062373796df9
+          path: _resolver
+          fetch-depth: 1
+
+      - name: Checkout released Contract C1
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+          path: _contract_c1
+          fetch-depth: 0
+
+      - name: Fetch Contract C1 release tag
+        run: git -C _contract_c1 fetch --force origin refs/tags/contract-c-v1.0.0:refs/tags/contract-c-v1.0.0
+
+      - name: Checkout released Contract D
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+          path: _contract_d
+          fetch-depth: 0
+
+      - name: Fetch Contract D release tag
+        run: git -C _contract_d fetch --force origin refs/tags/contract-d-v1.0.0:refs/tags/contract-d-v1.0.0
+
+      - name: Checkout exact frozen CAL
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: e24e405f5336ee024674f39dba97255bb58a2dd9
+          path: _cal
+          fetch-depth: 1
+
+      - name: Checkout exact frozen Evidence Bundler
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: 4e1f6fe00e7c350b28f52bfea14f1f8988847884
+          path: _eb
+          fetch-depth: 1
+
+      - name: Checkout frozen independent consumer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: 12e7e640b229619501960b1b89cf4716d8d985b3
+          path: _consumer
+          fetch-depth: 1
+
+      - name: Verify exact external identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _contract_c_parent rev-parse HEAD)" = "c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec"
+          test "$(git -C _contract_c_parent rev-parse HEAD:research/contract_c_cal_v1_parent_recomposition_rc0_20260919/candidate_rc0.py)" = "df6b6ed410f52cafaeadfe1578d770f480a34b09"
+          test "$(git -C _consumer rev-parse HEAD)" = "12e7e640b229619501960b1b89cf4716d8d985b3"
+          test "$(git -C _consumer rev-parse HEAD:candidate/consumer.py)" = "662e94c4445d2be9034e786711429394f217c0a6"
+          test "$(git -C _contract_c1 rev-parse HEAD)" = "5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1"
+          test "$(git -C _contract_d rev-parse HEAD)" = "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install bounded Python dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          pytest pydantic PyYAML click pypdf pdfminer.six rank-bm25
+
+      - name: Generate exact frozen parent-bound fixtures
+        env:
+          APPARATUS_ROOT: ${{ github.workspace }}/_contract_c_parent
+          CAL_ROOT: ${{ github.workspace }}/_cal
+          EB_ROOT: ${{ github.workspace }}/_eb
+          CAL_EB_INTEGRATION_REPO: ${{ github.workspace }}/_eb
+          C2_ROOT: ${{ github.workspace }}/_c2
+          RESOLVER_JSON: ${{ github.workspace }}/_resolver/research/contract_c2_current_cal_resolver_successor_rc0/RESOLVER.json
+          CONSUMER_ROOT: ${{ github.workspace }}/_consumer
+        run: python research/contract-c-parent-bound-de-qualification-20260919/generate_cases.py /tmp/parent-bound-cases
+
+      - name: Run frozen Decision qualification
+        env:
+          CONSUMER_ROOT: ${{ github.workspace }}/_consumer
+          CONTRACT_C1_ROOT: ${{ github.workspace }}/_contract_c1
+          CONTRACT_D_ROOT: ${{ github.workspace }}/_contract_d
+        run: node research/contract-c-parent-bound-de-qualification-20260919/qualify.mjs /tmp/parent-bound-cases /tmp/RESULT.json
+
+      - name: Preserve result
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-c-parent-bound-de-qualification
+          path: /tmp/RESULT.json
