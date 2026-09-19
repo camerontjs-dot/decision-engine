@@ -126,7 +126,7 @@ jobs:
       - name: Install bounded Python dependencies
         run: >-
           python -m pip install --disable-pip-version-check
-          pytest pydantic PyYAML click pypdf pdfminer.six rank-bm25
+          pytest pydantic PyYAML click pypdf pdfminer.six rank-bm25 rfc8785
 
       - name: Generate exact frozen parent-bound fixtures
         env:
