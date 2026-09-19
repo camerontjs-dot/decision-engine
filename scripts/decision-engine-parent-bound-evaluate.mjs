@@ -88,7 +88,7 @@ function readStrictJson(path, pythonExecutable, label) {
     "text = raw.decode('utf-8')",
     "value = json.loads(text, object_pairs_hook=pairs_hook, parse_constant=reject_constant)",
     "sys.stdout.write(json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False))",
-  ].join("\\n");
+  ].join("\n");
   const result = spawnSync(
     pythonExecutable,
     ["-c", program, path],
