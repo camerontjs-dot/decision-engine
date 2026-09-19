@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { decideParentBoundContractCToContractD } from "../src/parentBoundContractCDecision.js";
@@ -70,15 +71,38 @@ function parseArgs(argv) {
   return { help: false, values };
 }
 
-function readJson(path, label) {
-  let raw;
-  try {
-    raw = readFileSync(path, "utf8");
-  } catch (error) {
-    throw new CliError("input_read_failed", `${label}: ${error.message}`);
+function readStrictJson(path, pythonExecutable, label) {
+  const program = [
+    "import json, sys",
+    "path = sys.argv[1]",
+    "def pairs_hook(pairs):",
+    "    out = {}",
+    "    for key, value in pairs:",
+    "        if key in out:",
+    "            raise ValueError('duplicate JSON object key: ' + key)",
+    "        out[key] = value",
+    "    return out",
+    "def reject_constant(value):",
+    "    raise ValueError('non-finite JSON number: ' + value)",
+    "raw = open(path, 'rb').read()",
+    "text = raw.decode('utf-8')",
+    "value = json.loads(text, object_pairs_hook=pairs_hook, parse_constant=reject_constant)",
+    "sys.stdout.write(json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False))",
+  ].join("\\n");
+  const result = spawnSync(
+    pythonExecutable,
+    ["-c", program, path],
+    { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
+  );
+  if (result.error) {
+    throw new CliError("invalid_json_input", `${label}: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || "").trim();
+    throw new CliError("invalid_json_input", `${label}${detail ? `: ${detail}` : ""}`);
   }
   try {
-    return JSON.parse(raw);
+    return JSON.parse(result.stdout);
   } catch (error) {
     throw new CliError("invalid_json_input", `${label}: ${error.message}`);
   }
@@ -105,9 +129,15 @@ try {
     process.stdout.write(USAGE);
   } else {
     const { values } = parsed;
-    const target = readJson(values.get("--target"), "cannot read Decision target");
-    const consumerInputs = readJson(
+    const pythonExecutable = values.get("--python") || "python3";
+    const target = readStrictJson(
+      values.get("--target"),
+      pythonExecutable,
+      "cannot read Decision target",
+    );
+    const consumerInputs = readStrictJson(
       values.get("--consumer-inputs"),
+      pythonExecutable,
       "cannot read frozen-consumer inputs",
     );
     const decision = decideParentBoundContractCToContractD({
@@ -116,12 +146,12 @@ try {
       consumerRoot: values.get("--consumer-authority"),
       consumerInputs,
       decisionContext: { target },
-      pythonExecutable: values.get("--python") || "python3",
+      pythonExecutable,
     });
     const canonical = canonicalizeContractDWithAuthority({
       decision,
       contractDAuthorityRoot: values.get("--contract-d-authority"),
-      pythonExecutable: values.get("--python") || "python3",
+      pythonExecutable,
     });
     process.stdout.write(canonical);
   }
