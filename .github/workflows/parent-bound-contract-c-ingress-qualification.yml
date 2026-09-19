@@ -72,7 +72,7 @@ jobs:
           repository: camerontjs-dot/apparatus-contracts
           ref: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
           path: external/contract-d
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Checkout frozen CAL V1
         uses: actions/checkout@v4
