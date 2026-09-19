@@ -1,0 +1,301 @@
+name: Promotion - parent-bound Contract C ingress qualification
+
+on:
+  push:
+    branches:
+      - promotion/parent-bound-contract-c-ingress-20260919
+  pull_request:
+    paths:
+      - "src/parentBoundContractCDecision.js"
+      - "scripts/decision-engine-parent-bound-evaluate.mjs"
+      - "tests/parent-bound-production-qualification.mjs"
+      - "tests/generate-parent-bound-reseal-attacks.py"
+      - "docs/promotion/PARENT_BOUND_CONTRACT_C_INGRESS_20260919.md"
+      - ".github/workflows/parent-bound-contract-c-ingress-qualification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact PR85 research record
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: 679bc619d87b88015730ffce1acadd3d3d6cf1f3
+          path: external/pr85
+          fetch-depth: 1
+
+      - name: Checkout frozen parent-bound Contract C
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec
+          path: external/contract-c-parent
+          fetch-depth: 1
+
+      - name: Checkout exact Contract C RC2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: external/c2
+          fetch-depth: 1
+
+      - name: Checkout exact current-CAL resolver
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 1d33e0612befcf8016816197c90c062373796df9
+          path: external/resolver
+          fetch-depth: 1
+
+      - name: Checkout released Contract C 1.0.0 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 5fe55f9ed5d0ee9f026ca1b077e9d70ce0487ea1
+          path: external/contract-c1
+          fetch-depth: 1
+
+      - name: Checkout released Contract D 1.0.0 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+          path: external/contract-d
+          fetch-depth: 1
+
+      - name: Checkout frozen CAL V1
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: e24e405f5336ee024674f39dba97255bb58a2dd9
+          path: external/cal
+          fetch-depth: 1
+
+      - name: Checkout frozen Evidence Bundler
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: 4e1f6fe00e7c350b28f52bfea14f1f8988847884
+          path: external/eb
+          fetch-depth: 1
+
+      - name: Checkout frozen independent consumer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: 12e7e640b229619501960b1b89cf4716d8d985b3
+          path: external/consumer
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frozen producer/consumer validation dependencies
+        run: |
+          python -m pip install --disable-pip-version-check             pytest pydantic PyYAML click pypdf pdfminer.six rank-bm25 rfc8785
+
+      - name: Verify protected V1 core and exact external authorities
+        run: |
+          set -euo pipefail
+          test "$(git merge-base 7be709b2141c767c5da89b8b94cf90233c4238fe HEAD)" = "7be709b2141c767c5da89b8b94cf90233c4238fe"
+          test "$(git hash-object src/contractCDecision.js)" = "2225f73eb6eefd83609f0ba19e4786d1267dd527"
+          test "$(git hash-object src/decisionMaterializer.js)" = "1562fb29da6679a0cf894e478cbdd4ae16e21a18"
+          test "$(git hash-object src/contractCIngress.js)" = "f57a8067dadc04afb459f1d0342b2b786ec775e6"
+          test "$(git -C external/pr85 rev-parse HEAD)" = "679bc619d87b88015730ffce1acadd3d3d6cf1f3"
+          test "$(git -C external/contract-c-parent rev-parse HEAD)" = "c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec"
+          test "$(git -C external/contract-c-parent rev-parse HEAD:research/contract_c_cal_v1_parent_recomposition_rc0_20260919/candidate_rc0.py)" = "df6b6ed410f52cafaeadfe1578d770f480a34b09"
+          test "$(git -C external/c2 rev-parse HEAD)" = "b42c827acb0a9fe65353354d709add0e27bab307"
+          test "$(git -C external/resolver rev-parse HEAD)" = "1d33e0612befcf8016816197c90c062373796df9"
+          test "$(git -C external/contract-d rev-parse HEAD)" = "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+          test "$(git -C external/cal rev-parse HEAD)" = "e24e405f5336ee024674f39dba97255bb58a2dd9"
+          test "$(git -C external/eb rev-parse HEAD)" = "4e1f6fe00e7c350b28f52bfea14f1f8988847884"
+          test "$(git -C external/consumer rev-parse HEAD)" = "12e7e640b229619501960b1b89cf4716d8d985b3"
+          test "$(git -C external/consumer rev-parse HEAD:candidate/consumer.py)" = "662e94c4445d2be9034e786711429394f217c0a6"
+          test "$(git -C external/consumer rev-parse HEAD:candidate/test_consumer.py)" = "50f3104650a946b834c3ff6415bafb347863e836"
+          test "$(git -C external/consumer rev-parse HEAD:candidate/FREEZE_RECEIPT.json)" = "cb99cd2ee29d38e19c845771654898561b91552f"
+
+      - name: Prove maintained ingress is PR85 logic with import relocation only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          research = Path(
+              "external/pr85/research/contract-c-parent-bound-de-qualification-20260919/"
+              "parentBoundContractCDecision.mjs"
+          ).read_text()
+          expected = research.replace(
+              'from "../../src/decisionMaterializer.js"',
+              'from "./decisionMaterializer.js"',
+          ).replace(
+              'from "../../src/contractCDecision.js"',
+              'from "./contractCDecision.js"',
+          )
+          actual = Path("src/parentBoundContractCDecision.js").read_text()
+          assert actual == expected
+          PY
+
+      - name: Rebuild exact PR85 parent-bound fixtures
+        env:
+          APPARATUS_ROOT: ${{ github.workspace }}/external/contract-c-parent
+          CAL_ROOT: ${{ github.workspace }}/external/cal
+          EB_ROOT: ${{ github.workspace }}/external/eb
+          C2_ROOT: ${{ github.workspace }}/external/c2
+          RESOLVER_JSON: ${{ github.workspace }}/external/resolver/research/contract_c2_current_cal_resolver_successor_rc0/RESOLVER.json
+          CONSUMER_ROOT: ${{ github.workspace }}/external/consumer
+          CAL_EB_INTEGRATION_REPO: ${{ github.workspace }}/external/eb
+        run: |
+          python external/pr85/research/contract-c-parent-bound-de-qualification-20260919/generate_cases.py /tmp/parent-bound-cases
+
+      - name: Generate coherent reseal attacks with exact frozen Contract C sealer
+        env:
+          FIXTURE_ROOT: /tmp/parent-bound-cases
+          CONTRACT_C_ROOT: ${{ github.workspace }}/external/contract-c-parent
+          RC2_ROOT: ${{ github.workspace }}/external/c2
+          ATTACK_ROOT: /tmp/parent-bound-attacks
+        run: |
+          python tests/generate-parent-bound-reseal-attacks.py
+
+      - name: Qualify maintained ingress against PR85 and negative controls
+        env:
+          CONSUMER_ROOT: ${{ github.workspace }}/external/consumer
+          CONTRACT_D_ROOT: ${{ github.workspace }}/external/contract-d
+          RESEARCH_DE_ROOT: ${{ github.workspace }}/external/pr85
+          WRONG_CONSUMER_ROOT: ${{ github.workspace }}/external/contract-d
+        run: |
+          node tests/parent-bound-production-qualification.mjs             /tmp/parent-bound-cases             /tmp/parent-bound-attacks             /tmp/decision-parent-bound-qualification.json
+
+      - name: Exercise file-oriented CLI for supported, contradicted, and not-checkable cases
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/parent-bound-cases")
+          manifest = json.loads((root / "MANIFEST.json").read_text())
+          for case in ("PIPE01", "PIPE02", "PIPE03"):
+              info = manifest["cases"][case]
+              target = {
+                  "kind": "claim",
+                  "id": info["root"]["proposition_id"],
+                  "content_sha256": info["root"]["text_sha256"],
+              }
+              (root / case / "target.json").write_text(
+                  json.dumps(target, indent=2, sort_keys=True) + "\n"
+              )
+          PY
+
+          for case in PIPE01 PIPE02 PIPE03; do
+            sha="$(python -c 'import json,sys; print(json.load(open("/tmp/parent-bound-cases/MANIFEST.json"))["cases"][sys.argv[1]]["whole_object_sha256"])' "$case")"
+            node scripts/decision-engine-parent-bound-evaluate.mjs               --contract-c "/tmp/parent-bound-cases/$case/contract-c.json"               --contract-c-sha256 "$sha"               --consumer-authority "${{ github.workspace }}/external/consumer"               --consumer-inputs "/tmp/parent-bound-cases/$case/consumer-inputs.json"               --contract-d-authority "${{ github.workspace }}/external/contract-d"               --target "/tmp/parent-bound-cases/$case/target.json"               > "/tmp/$case-contract-d.json"
+          done
+
+          node - <<'NODE'
+          const fs = require("fs");
+          const expected = { PIPE01: "clear", PIPE02: "hold", PIPE03: "hold" };
+          for (const [caseId, disposition] of Object.entries(expected)) {
+            const value = JSON.parse(fs.readFileSync(`/tmp/${caseId}-contract-d.json`, "utf8"));
+            if (value.evaluation?.state !== "completed") throw new Error(caseId + ": not completed");
+            if (value.evaluation?.disposition !== disposition) throw new Error(caseId + ": wrong disposition");
+          }
+          NODE
+
+      - name: CLI fails before Decision on replayed child input
+        run: |
+          set -euo pipefail
+          cp /tmp/parent-bound-cases/PIPE01/consumer-inputs.json /tmp/replay-inputs.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          target = json.loads(Path("/tmp/replay-inputs.json").read_text())
+          source = json.loads(
+              Path("/tmp/parent-bound-cases/PIPE03/consumer-inputs.json").read_text()
+          )
+          common = next(
+              key for key in target["native_child_results_b64"]
+              if key in source["native_child_results_b64"]
+          )
+          target["native_child_results_b64"][common] = source["native_child_results_b64"][common]
+          Path("/tmp/replay-inputs.json").write_text(
+              json.dumps(target, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+          sha="$(python -c 'import json; print(json.load(open("/tmp/parent-bound-cases/MANIFEST.json"))["cases"]["PIPE01"]["whole_object_sha256"])')"
+          if node scripts/decision-engine-parent-bound-evaluate.mjs               --contract-c /tmp/parent-bound-cases/PIPE01/contract-c.json               --contract-c-sha256 "$sha"               --consumer-authority "${{ github.workspace }}/external/consumer"               --consumer-inputs /tmp/replay-inputs.json               --contract-d-authority "${{ github.workspace }}/external/contract-d"               --target /tmp/parent-bound-cases/PIPE01/target.json               > /tmp/replay-should-not-exist.json; then
+            echo "ERROR: replay reached Decision/Contract D"
+            exit 1
+          fi
+          test ! -s /tmp/replay-should-not-exist.json
+
+      - name: Ordinary Decision Engine regression
+        run: |
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node --test tests/decisionMaterializer.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - name: Record exact candidate identity
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], text=True).strip()
+          qual = json.loads(Path("/tmp/decision-parent-bound-qualification.json").read_text())
+          receipt = {
+              "schema": "decision-parent-bound-candidate-receipt-v1",
+              "commit": head,
+              "tree": tree,
+              "disposition": qual["disposition"],
+              "ingress_blob": subprocess.check_output(
+                  ["git", "hash-object", "src/parentBoundContractCDecision.js"],
+                  text=True,
+              ).strip(),
+              "cli_blob": subprocess.check_output(
+                  ["git", "hash-object", "scripts/decision-engine-parent-bound-evaluate.mjs"],
+                  text=True,
+              ).strip(),
+              "qualification_sha256": "sha256:" + hashlib.sha256(
+                  Path("/tmp/decision-parent-bound-qualification.json").read_bytes()
+              ).hexdigest(),
+              "contract_d_authority": "298a1a0f7b7b6d7712e11200d04faec3e1ca169b",
+          }
+          Path("/tmp/decision-parent-bound-candidate-receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decision-parent-bound-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            /tmp/decision-parent-bound-qualification.json
+            /tmp/decision-parent-bound-candidate-receipt.json
+            /tmp/PIPE01-contract-d.json
+            /tmp/PIPE02-contract-d.json
+            /tmp/PIPE03-contract-d.json
+            /tmp/parent-bound-attacks/MANIFEST.json
