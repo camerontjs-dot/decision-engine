@@ -1,0 +1,324 @@
+name: Research - hardened parent-bound dispatch frozen-pressure requalification
+
+on:
+  push:
+    branches:
+      - research/parent-bound-policy-dispatch-hardening-20261001
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pressure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout exact PR85 research fixture builder
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: 679bc619d87b88015730ffce1acadd3d3d6cf1f3
+          path: external/pr85
+          fetch-depth: 1
+
+      - name: Checkout frozen parent-bound Contract C
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec
+          path: external/contract-c-parent
+          fetch-depth: 1
+
+      - name: Checkout exact Contract C RC2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: external/c2
+          fetch-depth: 1
+
+      - name: Checkout exact current-CAL resolver
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 1d33e0612befcf8016816197c90c062373796df9
+          path: external/resolver
+          fetch-depth: 1
+
+      - name: Checkout released Contract D 1.0.0 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 298a1a0f7b7b6d7712e11200d04faec3e1ca169b
+          path: external/contract-d
+          fetch-depth: 0
+
+      - name: Checkout frozen CAL V1
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: e24e405f5336ee024674f39dba97255bb58a2dd9
+          path: external/cal
+          fetch-depth: 1
+
+      - name: Checkout frozen Evidence Bundler
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: 4e1f6fe00e7c350b28f52bfea14f1f8988847884
+          path: external/eb
+          fetch-depth: 1
+
+      - name: Checkout frozen independent consumer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: 12e7e640b229619501960b1b89cf4716d8d985b3
+          path: external/consumer
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frozen fixture dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            pytest pydantic PyYAML click pypdf pdfminer.six rank-bm25 rfc8785
+
+      - name: Verify frozen subject and protected bytes
+        run: |
+          set -euo pipefail
+          test "$(git merge-base 816374379ba7eb23f5bfdadaf203b7e287c052db HEAD)" = "816374379ba7eb23f5bfdadaf203b7e287c052db"
+          test "$(git hash-object src/parentBoundPolicyDispatch.js)" = "d711f05000eb46ed4b0763c1c0bd73056d3d3073"
+          test "$(git hash-object tests/parent-bound-policy-dispatch-pressure.mjs)" = "30490f91e77c3cc7cda86cecde650878a26ef80a"
+          test "$(git hash-object docs/research/parent-bound-policy-dispatch-pressure-20261001/PREREGISTRATION.md)" = "b79244a3315dcea75d7d43893dbada06f71f3e4b"
+          test "$(git hash-object tests/parent-bound-ers-policy-dispatch.mjs)" = "090756ffd7315585d7df2b1eba430a4a36446332"
+          test "$(git hash-object src/parentBoundContractCDecision.js)" = "83ab34bce30f874111500ed91f2c01421be9f9a0"
+          test "$(git hash-object src/decisionMaterializer.js)" = "1562fb29da6679a0cf894e478cbdd4ae16e21a18"
+          test "$(git hash-object src/contractCDecision.js)" = "2225f73eb6eefd83609f0ba19e4786d1267dd527"
+          test "$(git hash-object scripts/decision-engine-parent-bound-evaluate.mjs)" = "4e5a85aa1179e815b5e23e6524e2b2a314aab7d0"
+          test "$(git -C external/contract-c-parent rev-parse HEAD)" = "c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec"
+          test "$(git -C external/c2 rev-parse HEAD)" = "b42c827acb0a9fe65353354d709add0e27bab307"
+          test "$(git -C external/resolver rev-parse HEAD)" = "1d33e0612befcf8016816197c90c062373796df9"
+          test "$(git -C external/contract-d rev-parse HEAD)" = "298a1a0f7b7b6d7712e11200d04faec3e1ca169b"
+          test "$(git -C external/cal rev-parse HEAD)" = "e24e405f5336ee024674f39dba97255bb58a2dd9"
+          test "$(git -C external/eb rev-parse HEAD)" = "4e1f6fe00e7c350b28f52bfea14f1f8988847884"
+          test "$(git -C external/consumer rev-parse HEAD)" = "12e7e640b229619501960b1b89cf4716d8d985b3"
+          test "$(git -C external/consumer rev-parse HEAD:candidate/consumer.py)" = "662e94c4445d2be9034e786711429394f217c0a6"
+          test "$(git -C external/consumer rev-parse HEAD:candidate/test_consumer.py)" = "50f3104650a946b834c3ff6415bafb347863e836"
+          test "$(git -C external/consumer rev-parse HEAD:candidate/FREEZE_RECEIPT.json)" = "cb99cd2ee29d38e19c845771654898561b91552f"
+
+      - name: Rebuild exact parent-bound fixtures
+        env:
+          APPARATUS_ROOT: ${{ github.workspace }}/external/contract-c-parent
+          CAL_ROOT: ${{ github.workspace }}/external/cal
+          EB_ROOT: ${{ github.workspace }}/external/eb
+          C2_ROOT: ${{ github.workspace }}/external/c2
+          RESOLVER_JSON: ${{ github.workspace }}/external/resolver/research/contract_c2_current_cal_resolver_successor_rc0/RESOLVER.json
+          CONSUMER_ROOT: ${{ github.workspace }}/external/consumer
+          CAL_EB_INTEGRATION_REPO: ${{ github.workspace }}/external/eb
+        run: |
+          python external/pr85/research/contract-c-parent-bound-de-qualification-20260919/generate_cases.py /tmp/parent-bound-cases
+
+      - name: Build PR87 parity fixture view
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr87-fixtures
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          src = Path("/tmp/parent-bound-cases")
+          dst = Path("/tmp/pr87-fixtures")
+          manifest = json.loads((src / "MANIFEST.json").read_text())
+          for case in ("PIPE01", "PIPE02", "PIPE03"):
+              case_src = src / case
+              case_dst = dst / case
+              (case_dst / "cal").mkdir(parents=True, exist_ok=True)
+              shutil.copy2(case_src / "contract-c.json", case_dst / "cal" / "contract-c.json")
+              shutil.copy2(case_src / "consumer-inputs.json", case_dst / "consumer-inputs.json")
+              root = manifest["cases"][case]["root"]
+              target = {
+                  "kind": "claim",
+                  "id": root["proposition_id"],
+                  "content_sha256": root["text_sha256"],
+              }
+              (case_dst / "decision-target.json").write_text(
+                  json.dumps(target, indent=2, sort_keys=True) + "\n"
+              )
+          PY
+
+          for case in PIPE01 PIPE02 PIPE03; do
+            sha="$(python -c 'import json,sys; print(json.load(open("/tmp/parent-bound-cases/MANIFEST.json"))["cases"][sys.argv[1]]["whole_object_sha256"])' "$case")"
+            node scripts/decision-engine-parent-bound-evaluate.mjs \
+              --contract-c "/tmp/parent-bound-cases/$case/contract-c.json" \
+              --contract-c-sha256 "$sha" \
+              --consumer-authority "${{ github.workspace }}/external/consumer" \
+              --consumer-inputs "/tmp/parent-bound-cases/$case/consumer-inputs.json" \
+              --contract-d-authority "${{ github.workspace }}/external/contract-d" \
+              --target "/tmp/pr87-fixtures/$case/decision-target.json" \
+              > "/tmp/pr87-fixtures/$case/contract-d.json"
+          done
+
+      - name: Reproduce PR87 phase-A controls
+        run: |
+          node tests/parent-bound-ers-policy-dispatch.mjs \
+            --fixtures /tmp/pr87-fixtures \
+            --consumer "${{ github.workspace }}/external/consumer" \
+            --contract-d "${{ github.workspace }}/external/contract-d" \
+            --python python3 \
+            --out /tmp/pr87-phase-a.json
+
+      - name: Run frozen-candidate pressure controls
+        id: pressure
+        run: |
+          set +e
+          node tests/parent-bound-policy-dispatch-pressure.mjs \
+            --fixtures /tmp/parent-bound-cases \
+            --consumer "${{ github.workspace }}/external/consumer" \
+            --python python3 \
+            --out /tmp/policy-dispatch-pressure.json
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Weak-control policy/effect mutation must be detected
+        id: weak
+        run: |
+          set -euo pipefail
+          cp src/parentBoundPolicyDispatch.js /tmp/parentBoundPolicyDispatch.original.js
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("src/parentBoundPolicyDispatch.js")
+          text = path.read_text()
+          needle = 'type: "epistemic_audit.stage_pending_review",'
+          replacement = 'type: "caller.mutated_effect",'
+          count = text.count(needle)
+          if count != 1:
+              raise SystemExit(f"expected exactly one ERS effect declaration, found {count}")
+          path.write_text(text.replace(needle, replacement))
+          PY
+
+          set +e
+          node tests/parent-bound-ers-policy-dispatch.mjs \
+            --fixtures /tmp/pr87-fixtures \
+            --consumer "${{ github.workspace }}/external/consumer" \
+            --contract-d "${{ github.workspace }}/external/contract-d" \
+            --python python3 \
+            --out /tmp/weak-phase-a.json \
+            > /tmp/weak-control.stdout 2> /tmp/weak-control.stderr
+          weak_status=$?
+          set -e
+
+          cp /tmp/parentBoundPolicyDispatch.original.js src/parentBoundPolicyDispatch.js
+          test "$(git hash-object src/parentBoundPolicyDispatch.js)" = "d711f05000eb46ed4b0763c1c0bd73056d3d3073"
+
+          python - "$weak_status" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          status = int(sys.argv[1])
+          receipt = {
+              "schema": "policy-dispatch-weak-control/1",
+              "mutation": "ERS effect type changed without policy id/version change",
+              "rejected": status != 0,
+              "exit_code": status,
+              "stdout": Path("/tmp/weak-control.stdout").read_text(),
+              "stderr": Path("/tmp/weak-control.stderr").read_text(),
+          }
+          Path("/tmp/weak-control.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          if status == 0:
+              print("WEAK_CONTROL_PASSED_UNEXPECTEDLY")
+          else:
+              print("WEAK_CONTROL_REJECTED")
+          PY
+
+      - name: Ordinary Decision Engine regression
+        run: |
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node --test tests/decisionMaterializer.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - name: Compress research disposition
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          phase_a = json.loads(Path("/tmp/pr87-phase-a.json").read_text())
+          pressure = json.loads(Path("/tmp/policy-dispatch-pressure.json").read_text())
+          weak = json.loads(Path("/tmp/weak-control.json").read_text())
+
+          if not weak["rejected"]:
+              disposition = "INCONCLUSIVE"
+          elif pressure.get("apparatus_errors"):
+              disposition = "INCONCLUSIVE"
+          elif pressure.get("falsifiers"):
+              disposition = "FALSIFIED"
+          elif not phase_a.get("passed", False):
+              disposition = "INCONCLUSIVE"
+          else:
+              disposition = "SUPPORTED FOR PROMOTION"
+
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], text=True).strip()
+          result = {
+              "schema": "parent-bound-policy-dispatch-pressure-result/1",
+              "disposition": disposition,
+              "system_under_test": {
+                  "successor_semantic_commit": "fa6039567d543ef8c9009e0a4ffdfdc1dd97281f",
+                  "dispatch_blob": "d711f05000eb46ed4b0763c1c0bd73056d3d3073",
+                  "predecessor_pr87_commit": "816374379ba7eb23f5bfdadaf203b7e287c052db",
+                  "parent_pr86_commit": "6cdb59c2ba41779ac954af56dd077574ba090013",
+                  "frozen_pressure_test_blob": "30490f91e77c3cc7cda86cecde650878a26ef80a",
+              },
+              "apparatus_head": head,
+              "apparatus_tree": tree,
+              "phase_a_passed": phase_a.get("passed", False),
+              "pressure_falsifiers": pressure.get("falsifiers", []),
+              "pressure_controls": pressure.get("controls", {}),
+              "pressure_apparatus_errors": pressure.get("apparatus_errors", []),
+              "weak_control_rejected": weak["rejected"],
+              "non_claims": [
+                  "No Contract D registration is established.",
+                  "No Contract E behavior is established.",
+                  "No Authorization or execution behavior is established.",
+                  "No ERS readiness claim is established.",
+              ],
+          }
+          encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
+          Path("/tmp/policy-dispatch-pressure-result.json").write_text(encoded)
+          print(json.dumps(result, sort_keys=True))
+          print("RESULT_SHA256=sha256:" + hashlib.sha256(encoded.encode()).hexdigest())
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parent-bound-policy-dispatch-successor-pressure-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            /tmp/pr87-phase-a.json
+            /tmp/policy-dispatch-pressure.json
+            /tmp/weak-control.json
+            /tmp/weak-control.stdout
+            /tmp/weak-control.stderr
+            /tmp/policy-dispatch-pressure-result.json
