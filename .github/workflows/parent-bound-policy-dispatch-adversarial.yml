@@ -1,0 +1,148 @@
+name: Research - parent-bound policy dispatch adversarial
+
+on:
+  push:
+    branches:
+      - research/parent-bound-policy-dispatch-adversarial-20261001
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  adversarial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen PR87 subject and protected Decision baseline
+        run: |
+          set -euo pipefail
+          test "$(git merge-base 816374379ba7eb23f5bfdadaf203b7e287c052db HEAD)" = "816374379ba7eb23f5bfdadaf203b7e287c052db"
+          test "$(git hash-object src/parentBoundPolicyDispatch.js)" = "9948b0dba9f77d2ad7c71d74b27d2684985ecc70"
+          test "$(git hash-object src/parentBoundContractCDecision.js)" = "83ab34bce30f874111500ed91f2c01421be9f9a0"
+          test "$(git hash-object src/contractCDecision.js)" = "2225f73eb6eefd83609f0ba19e4786d1267dd527"
+          test "$(git hash-object src/decisionMaterializer.js)" = "1562fb29da6679a0cf894e478cbdd4ae16e21a18"
+
+      - name: Checkout exact PR85 research record
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/decision-engine
+          ref: 679bc619d87b88015730ffce1acadd3d3d6cf1f3
+          path: external/pr85
+          fetch-depth: 1
+
+      - name: Checkout frozen parent-bound Contract C
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: c5b1d757f3a0ad4f6e2c3f6dbdc2dd2d3c1403ec
+          path: external/contract-c-parent
+          fetch-depth: 1
+
+      - name: Checkout exact Contract C RC2 authority
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: b42c827acb0a9fe65353354d709add0e27bab307
+          path: external/c2
+          fetch-depth: 1
+
+      - name: Checkout exact current-CAL resolver
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/apparatus-contracts
+          ref: 1d33e0612befcf8016816197c90c062373796df9
+          path: external/resolver
+          fetch-depth: 1
+
+      - name: Checkout frozen CAL V1
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/claim-audit-lab
+          ref: e24e405f5336ee024674f39dba97255bb58a2dd9
+          path: external/cal
+          fetch-depth: 1
+
+      - name: Checkout frozen Evidence Bundler
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/evidence-bundler
+          ref: 4e1f6fe00e7c350b28f52bfea14f1f8988847884
+          path: external/eb
+          fetch-depth: 1
+
+      - name: Checkout frozen independent consumer
+        uses: actions/checkout@v4
+        with:
+          repository: camerontjs-dot/research-scaffold-harness
+          ref: 12e7e640b229619501960b1b89cf4716d8d985b3
+          path: external/consumer
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frozen producer and consumer dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            pytest pydantic PyYAML click pypdf pdfminer.six rank-bm25 rfc8785
+
+      - name: Rebuild exact parent-bound fixtures
+        env:
+          APPARATUS_ROOT: ${{ github.workspace }}/external/contract-c-parent
+          CAL_ROOT: ${{ github.workspace }}/external/cal
+          EB_ROOT: ${{ github.workspace }}/external/eb
+          C2_ROOT: ${{ github.workspace }}/external/c2
+          RESOLVER_JSON: ${{ github.workspace }}/external/resolver/research/contract_c2_current_cal_resolver_successor_rc0/RESOLVER.json
+          CONSUMER_ROOT: ${{ github.workspace }}/external/consumer
+          CAL_EB_INTEGRATION_REPO: ${{ github.workspace }}/external/eb
+        run: |
+          python external/pr85/research/contract-c-parent-bound-de-qualification-20260919/generate_cases.py /tmp/parent-bound-cases
+
+      - name: Run frozen adversarial dispatch apparatus
+        id: adversarial
+        continue-on-error: true
+        run: |
+          node tests/parent-bound-policy-dispatch-adversarial.mjs \
+            /tmp/parent-bound-cases \
+            "${{ github.workspace }}/external/consumer" \
+            /tmp/parent-bound-policy-dispatch-adversarial.json
+
+      - name: Ordinary Decision Engine regression
+        if: steps.adversarial.outcome == 'success'
+        run: |
+          node tests/engine.sweep.mjs
+          node tests/output-quality.sweep.mjs
+          node tests/combination-matrix.sweep.mjs
+          node --test tests/gateHead.test.mjs
+          node --test tests/decisionMaterializer.test.mjs
+          node research/contract-c-seam-shadow/validate-fixtures.mjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parent-bound-policy-dispatch-adversarial-${{ github.sha }}
+          if-no-files-found: error
+          path: /tmp/parent-bound-policy-dispatch-adversarial.json
+
+      - name: Enforce adversarial disposition
+        if: always()
+        run: |
+          test -f /tmp/parent-bound-policy-dispatch-adversarial.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("/tmp/parent-bound-policy-dispatch-adversarial.json").read_text())
+          print(json.dumps(r, indent=2, sort_keys=True))
+          if not r.get("passed"):
+              raise SystemExit(1)
+          PY
