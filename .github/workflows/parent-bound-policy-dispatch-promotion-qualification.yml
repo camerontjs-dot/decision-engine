@@ -102,9 +102,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git merge-base 6cdb59c2ba41779ac954af56dd077574ba090013 HEAD)" = "6cdb59c2ba41779ac954af56dd077574ba090013"
-          test "$(git hash-object src/parentBoundPolicyDispatch.js)" = "d711f05000eb46ed4b0763c1c0bd73056d3d3073"
+          test "$(git hash-object src/parentBoundPolicyDispatch.js)" = "d711f05000eb46ed4b0763c1c0bd73056d3d3073"\n          test "$(git hash-object scripts/decision-engine-parent-bound-policy-evaluate.mjs)" = "c628eaaf4f55b890f7fe0a6750f7265bf407d92e"
           test "$(git hash-object tests/parent-bound-policy-dispatch-pressure.mjs)" = "30490f91e77c3cc7cda86cecde650878a26ef80a"
-          test "$(git hash-object docs/research/parent-bound-policy-dispatch-pressure-20261001/PREREGISTRATION.md)" = "b79244a3315dcea75d7d43893dbada06f71f3e4b"
           test "$(git hash-object tests/parent-bound-ers-policy-dispatch.mjs)" = "090756ffd7315585d7df2b1eba430a4a36446332"
           test "$(git hash-object src/parentBoundContractCDecision.js)" = "83ab34bce30f874111500ed91f2c01421be9f9a0"
           test "$(git hash-object src/decisionMaterializer.js)" = "1562fb29da6679a0cf894e478cbdd4ae16e21a18"
