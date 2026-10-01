@@ -49,7 +49,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           git merge-base --is-ancestor "$RELEASE_BASE" "$CANDIDATE_SHA"
 
-          unexpected="$(git diff --name-only "$RELEASE_BASE" "$CANDIDATE_SHA" | grep -Ev '^(release/metadata\.json|CHANGELOG\.md|README\.md|docs/DECISION_ENGINE_V1_1_RELEASE_READINESS\.md|\.github/workflows/decision-engine-v1-release-qualification\.yml)
+          unexpected="$(git diff --name-only "$RELEASE_BASE" "$CANDIDATE_SHA" | grep -Ev '^(release/metadata\.json|CHANGELOG\.md|README\.md|docs/DECISION_ENGINE_V1_1_RELEASE_READINESS\.md|\.github/workflows/decision-engine-v1-release-qualification\.yml)$' || true)"
           if [ -n "$unexpected" ]; then
             echo "Unexpected release-candidate changes:"
             printf '%s\n' "$unexpected"
