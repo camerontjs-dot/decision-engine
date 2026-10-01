@@ -6,7 +6,7 @@ on:
       - promotion/parent-bound-policy-dispatch-20261001
   pull_request:
     branches:
-      - promotion/parent-bound-contract-c-ingress-20260919
+      - main
   workflow_dispatch:
 
 permissions:
