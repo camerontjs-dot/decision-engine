@@ -27,11 +27,6 @@ export const EPISTEMIC_AUDIT_STAGE_PENDING_REVIEW_POLICY = Object.freeze({
   }),
 });
 
-const MAINTAINED_POLICIES = Object.freeze({
-  [SUPPORTED_CLAIM_VERIFICATION_POLICY.id]: SUPPORTED_CLAIM_VERIFICATION_POLICY,
-  [EPISTEMIC_AUDIT_STAGE_PENDING_REVIEW_POLICY.id]: EPISTEMIC_AUDIT_STAGE_PENDING_REVIEW_POLICY,
-});
-
 export { ParentBoundDecisionError };
 
 function exactKeys(value, expected, label) {
@@ -110,15 +105,35 @@ function validateContextShape(decisionContext) {
   }
 }
 
-function selectMaintainedPolicy(policy) {
-  const maintained = MAINTAINED_POLICIES[policy.id];
-  if (!maintained || maintained.version !== policy.version) {
+function snapshotDecisionContext(decisionContext) {
+  try {
+    return structuredClone(decisionContext);
+  } catch (error) {
+    const detail = error instanceof Error ? `: ${error.message}` : "";
     throw new ParentBoundDecisionError(
-      "unsupported_policy",
-      "decisionContext.policy must be an exact maintained parent-bound policy",
+      "invalid_context",
+      `decisionContext must be structured-cloneable data${detail}`,
     );
   }
-  return maintained;
+}
+
+function selectMaintainedPolicy(policy) {
+  if (
+    policy.id === SUPPORTED_CLAIM_VERIFICATION_POLICY.id &&
+    policy.version === SUPPORTED_CLAIM_VERIFICATION_POLICY.version
+  ) {
+    return SUPPORTED_CLAIM_VERIFICATION_POLICY;
+  }
+  if (
+    policy.id === EPISTEMIC_AUDIT_STAGE_PENDING_REVIEW_POLICY.id &&
+    policy.version === EPISTEMIC_AUDIT_STAGE_PENDING_REVIEW_POLICY.version
+  ) {
+    return EPISTEMIC_AUDIT_STAGE_PENDING_REVIEW_POLICY;
+  }
+  throw new ParentBoundDecisionError(
+    "unsupported_policy",
+    "decisionContext.policy must be an exact maintained parent-bound policy",
+  );
 }
 
 function validateTarget(target, root) {
@@ -226,8 +241,9 @@ export function decideParentBoundPolicy({
   decisionContext,
   pythonExecutable = "python3",
 }) {
-  validateContextShape(decisionContext);
-  const policy = selectMaintainedPolicy(decisionContext.policy);
+  const context = snapshotDecisionContext(decisionContext);
+  validateContextShape(context);
+  const policy = selectMaintainedPolicy(context.policy);
   const contractC = validateWithFrozenConsumer({
     contractCBytes,
     expectedContractCSha256,
@@ -235,11 +251,11 @@ export function decideParentBoundPolicy({
     consumerInputs,
     pythonExecutable,
   });
-  validateTarget(decisionContext.target, contractC.recomposition.root);
+  validateTarget(context.target, contractC.recomposition.root);
   return emitPolicyDecision(
     contractC,
     expectedContractCSha256,
-    decisionContext.target,
+    context.target,
     policy,
   );
 }
