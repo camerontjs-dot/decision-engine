@@ -1,8 +1,43 @@
 # Changelog
 
+## 1.1.0 — release candidate
+
+Backward-compatible Decision Engine capability release built on the released 1.0.0 surface.
+
+### Added
+
+- maintained parent-bound Contract C ingress qualified against frozen parent/child/whole-object authorities;
+- maintained parent-bound policy dispatch with exact id/version selection and policy-owned effects;
+- `decision-engine.contract-c.epistemic-audit-stage-pending-review@1.0.0`, owning `epistemic_audit.stage_pending_review@1`;
+- fail-closed caller-context snapshotting before validation/use;
+- exact rejection of inherited/prototype policy names and caller-supplied effect/requested-operation state;
+- parent-bound file CLI and frozen promotion qualification.
+
+### Preserved compatibility
+
+- released 1.0.0 Contract C 1.0.0 → Decision → Contract D 1.0.0 surfaces remain unchanged;
+- V1 supported-claim policy and Decision materializer bytes remain unchanged;
+- parent-bound supported claims CLEAR, while contradicted and `not_checkable` parents HOLD;
+- Decision remains separate from operational Authorization and execution.
+
+### Explicit limit
+
+Released Contract D 1.0.0 does **not** register `epistemic_audit.stage_pending_review@1`; it rejects that effect as `unknown_effect_type`. The new ERS-oriented policy is therefore a native Decision capability, not a released Decision → Contract D → Authorization → ERS execution path.
+
+### Evidence lineage
+
+- parent-bound ingress promotion: PR #86;
+- falsified first dispatch candidate: PR #87 / pressure PR #88;
+- hardened dispatch research disposition: PR #90, `SUPPORTED FOR PROMOTION`;
+- hardened dispatch production promotion: PR #91.
+
+### Release state
+
+This entry remains a release candidate until exact release qualification passes and the immutable `v1.1.0` tag and GitHub Release are created from the same qualified release commit.
+
 This changelog records Decision Engine repository releases. A listed version is not an official release until its immutable Git tag and GitHub Release exist for the same release commit.
 
-## 1.0.0 — release candidate
+## 1.0.0 — released 2026-09-11
 
 Proposed first normal repository release. The stable public compatibility promise is deliberately limited to the maintained bounded Contract C 1.0.0 → Decision Engine policy → Contract D 1.0.0 surface and its exact-authority invocation API/CLI.
 
@@ -39,4 +74,4 @@ Proposed first normal repository release. The stable public compatibility promis
 
 ### Release state
 
-This entry remains a release candidate until the dedicated release qualification passes on the exact intended release tree and an explicit operator decision authorizes creation of the immutable `v1.0.0` tag and GitHub Release.
+Release published on 2026-09-11 as immutable tag `v1.0.0` with a GitHub Release and deterministic source archive.

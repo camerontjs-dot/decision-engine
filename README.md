@@ -4,7 +4,7 @@
 
 Decision Engine is a decision-support research repository for turning explicit inputs and policy into inspectable recommendations without hiding uncertainty or silently acquiring authority to act.
 
-The repository currently contains a **maintained bounded Contract C 1.0.0 → explicit Decision policy → Contract D 1.0.0 surface with two explicit policies and an exact-authority invocation CLI**, plus two pre-existing decision heads with different scopes. They should not be collapsed into one maturity claim.
+The repository currently contains a **maintained bounded Contract C 1.0.0 → explicit Decision policy → Contract D 1.0.0 surface with two released-policy paths, plus a maintained parent-bound Contract C → Decision policy-dispatch surface and exact-authority CLIs**, alongside two pre-existing decision heads with different scopes. They should not be collapsed into one maturity claim.
 
 Pipeline siblings: [Claim Audit Lab](https://github.com/camerontjs-dot/claim-audit-lab), [Evidence Bundler](https://github.com/camerontjs-dot/evidence-bundler), and [Apparatus Contracts](https://github.com/camerontjs-dot/apparatus-contracts). The standalone career presentation lives in [`career-decision-engine`](https://github.com/camerontjs-dot/career-decision-engine).
 
@@ -63,6 +63,25 @@ The target is an exact `claim-evidence-link`. The effect is `knowledge.cite_as_e
 For this policy, a causal-basis contribution can CLEAR; a retained residual/non-deciding contribution HOLDs; and an otherwise valid request that cannot identify the requested proposition or contribution yields `evaluation.failed`. The policy deliberately does not use headline `reported_verdict`, measurement thresholds, or assessment-stage values to manufacture citation authority.
 
 A CLEAR here does **not** establish that the source is trustworthy, that the evidence is universally true, that a citation is complete/publication-ready, or that any actor is authorized to mutate knowledge state.
+
+#### Parent-bound Contract C policy dispatch
+
+The maintained parent-bound path is separate from the released Contract C 1.0.0 ingress above.
+
+[`src/parentBoundContractCDecision.js`](src/parentBoundContractCDecision.js) admits the qualified parent-bound Contract C representation and binds its exact root target. [`src/parentBoundPolicyDispatch.js`](src/parentBoundPolicyDispatch.js) then selects only exact maintained policy id/version pairs after snapshotting caller-owned context.
+
+It maintains:
+
+- `decision-engine.contract-c.supported-claim-verification@1.0.0` → `knowledge.add_verified_tag@1(scope=claim)`;
+- `decision-engine.contract-c.epistemic-audit-stage-pending-review@1.0.0` → `epistemic_audit.stage_pending_review@1`.
+
+The caller does not provide an effect or requested operation. Unknown, wrong-version, inherited/prototype, extra-field, or non-cloneable policy/context state fails closed.
+
+For the parent result, `supported` maps to CLEAR; `contradicted` and `not_checkable` map to HOLD.
+
+Released Contract D 1.0.0 does not currently register the ERS staging effect and rejects it as `unknown_effect_type`. That means this is a maintained Decision capability, not yet a released ERS execution chain.
+
+[`scripts/decision-engine-parent-bound-policy-evaluate.mjs`](scripts/decision-engine-parent-bound-policy-evaluate.mjs) is the file-oriented parent-bound policy invocation surface.
 
 #### Common runtime and CLI
 
@@ -232,7 +251,10 @@ src/contractCBasisCitationDecision.js         causal-basis citation policy
 src/contractCDecisionRuntime.js               explicit two-policy invocation dispatch
 src/contractD.js                              Contract D wire-state exporter
 src/contractDCanonicalOutput.js               exact Contract D validation/canonical output
+src/parentBoundContractCDecision.js            parent-bound Contract C ingress
+src/parentBoundPolicyDispatch.js               exact maintained parent-bound policy dispatch
 scripts/decision-engine-evaluate.mjs           thin exact-authority CLI
+scripts/decision-engine-parent-bound-policy-evaluate.mjs parent-bound policy CLI
 
 tests/                                        career, Gate, Contract C→D, policy, CLI checks
 research/contract-c-seam-shadow/              preserved Contract C / Gate research fixtures
